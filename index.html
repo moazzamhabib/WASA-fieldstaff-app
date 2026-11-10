@@ -119,7 +119,7 @@
                 </div>
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
                     <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Collected</span>
-                    <span id="stat-total-amount" class="text-xl font-bold text-emerald-600 mt-1">Rs 0.00</span>
+                    <span id="stat-total-amount" class="text-xl font-bold text-emerald-600 mt-1">Rs. 0.00</span>
                 </div>
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
                     <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pending</span>
@@ -144,6 +144,13 @@
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
                             <option value="">Select Ward...</option>
                         </select>
+                    </div>
+
+                    <!-- Auto-populated Sub Division -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Sub Division (Auto)</label>
+                        <input type="text" id="subDivision" readonly placeholder="Auto-populated from Ward"
+                            class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-600 cursor-not-allowed">
                     </div>
 
                     <!-- Auto-populated RFI Name -->
@@ -179,7 +186,7 @@
 
                         <!-- Recovery Amount -->
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Recovery Amount (Rs) *</label>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Recovery Amount (Rs.) *</label>
                             <input type="number" id="recoveryAmount" step="0.01" min="0" required placeholder="0.00" 
                                 class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
                         </div>
@@ -190,12 +197,12 @@
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Status *</label>
                         <select id="statusSelect" required onchange="handleStatusChange(this.value)"
                             class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
-                            <option value="Fully Recovered">Fully Recovered</option>
-                            <option value="Paying in Installment">Paying in Installment</option>
-                            <option value="Disconnection on Arrears">Disconnection on Arrears</option>
-                            <option value="File Status">File Status</option>
-                            <option value="Application by Consumer">Meter Defective</option>
+                            <option value="Full Recovered">Full Recovered</option>
+                            <option value="Paying in Installments">Paying in Installments</option>
+                            <option value="Disconnected / Not Paying">Disconnected / Not Paying</option>
                             <option value="Property Locked">Property Locked</option>
+                            <option value="Notice / Filed Status">Notice / Filed Status</option>
+                            <option value="Warning ⚠️ to Pay Bill">Warning ⚠️ to Pay Bill</option>
                         </select>
                     </div>
 
@@ -227,7 +234,7 @@
             
             <!-- Table Header & Action Tools -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
-                <div class="flex items-center gap-3">
+                <div>
                     <h2 class="font-bold text-slate-900 text-lg flex items-center gap-2">
                         <span>Field Log Entries</span>
                         <span id="badge-count" class="text-xs bg-slate-100 text-slate-600 font-medium px-2.5 py-0.5 rounded-full border border-slate-200">0</span>
@@ -236,45 +243,36 @@
 
                 <!-- Export and Copy Actions -->
                 <div class="flex items-center gap-2 flex-wrap">
-                    <button id="bulkDeleteBtn" onclick="confirmBulkDelete()" disabled
-                        class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium text-xs rounded-xl border border-rose-200 transition flex items-center gap-1.5 opacity-50 cursor-not-allowed">
-                        <i class="fa-solid fa-trash-can"></i>
-                        <span id="bulkDeleteText">Delete Selected</span>
-                    </button>
-
                     <button onclick="exportExcel()" 
-                        class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 active:scale-95">
+                        class="flex-1 sm:flex-none px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 active:scale-95">
                         <i class="fa-solid fa-file-excel"></i>
-                        <span>Excel</span>
+                        <span>Download Excel</span>
                     </button>
 
                     <button onclick="copyToClipboard()" 
-                        class="px-3.5 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 font-medium text-xs rounded-xl border border-sky-200 transition flex items-center gap-1.5 active:scale-95">
+                        class="flex-1 sm:flex-none px-3.5 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 font-medium text-xs rounded-xl border border-sky-200 transition flex items-center justify-center gap-1.5 active:scale-95">
                         <i class="fa-regular fa-copy"></i>
-                        <span>Copy</span>
+                        <span>Copy for Excel</span>
                     </button>
 
                     <button onclick="exportCSV()" 
-                        class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs rounded-xl border border-slate-200 transition flex items-center gap-1.5 active:scale-95">
+                        class="flex-1 sm:flex-none px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs rounded-xl border border-slate-200 transition flex items-center justify-center gap-1.5 active:scale-95">
                         <i class="fa-solid fa-file-csv text-slate-600"></i>
-                        <span>CSV</span>
+                        <span>Export CSV</span>
                     </button>
 
                     <button onclick="clearAllRecords()" title="Clear All Logged Data" 
                         class="p-2 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl border border-slate-200 hover:border-rose-200 transition">
-                        <i class="fa-solid fa-trash-arrow-up"></i>
+                        <i class="fa-regular fa-trash-can"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Table Container -->
             <div class="overflow-x-auto custom-scrollbar flex-1 -mx-5 sm:mx-0">
-                <table class="w-full text-left text-sm border-collapse min-w-[750px]">
+                <table class="w-full text-left text-sm border-collapse min-w-[700px]">
                     <thead>
                         <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                            <th class="py-3 px-3 w-10 text-center">
-                                <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)" class="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4 cursor-pointer" title="Select All Records">
-                            </th>
                             <th class="py-3 px-3">Ward</th>
                             <th class="py-3 px-3">RFI</th>
                             <th class="py-3 px-3">AFI</th>
@@ -302,6 +300,104 @@
         </div>
     </main>
 
+    <!-- Automatic Real-Time Ward / RFI / AFI Summaries -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 w-full space-y-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="font-bold text-slate-900 text-xl">Real-Time Recovery Summaries</h2>
+                <p class="text-xs text-slate-500 mt-1">Automatically computed per Ward, RFI, and AFI from logged field entries</p>
+            </div>
+            <span class="text-xs font-medium text-sky-700 bg-sky-50 border border-sky-100 rounded-full px-3 py-1">Live updates</span>
+        </div>
+
+        <!-- Ward-wise Summary -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm sm:text-base">Ward-wise Recovery Summary</h3>
+                    <p class="text-xs text-slate-500">Ward breakdown with total entries, accounts, recovered amounts, and action statuses</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs sm:text-sm min-w-[750px]">
+                    <thead class="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
+                        <tr>
+                            <th class="p-3">Ward No.</th>
+                            <th class="p-3">Sub Division</th>
+                            <th class="p-3 text-center">Entries</th>
+                            <th class="p-3 text-center">Unique Accounts</th>
+                            <th class="p-3 text-center">Full Recovered</th>
+                            <th class="p-3 text-center">Installments / Pending</th>
+                            <th class="p-3 text-right">Total Recovered</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wardSummaryBody" class="divide-y divide-slate-100">
+                        <tr><td colspan="7" class="p-4 text-center text-slate-400">No records logged yet</td></tr>
+                    </tbody>
+                    <tfoot id="wardSummaryFoot" class="bg-slate-100 font-bold text-slate-900"></tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- RFI-wise Summary -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm sm:text-base">RFI-wise Recovery Summary</h3>
+                    <p class="text-xs text-slate-500">RFI aggregate performance across assigned Wards and field staff</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs sm:text-sm min-w-[750px]">
+                    <thead class="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
+                        <tr>
+                            <th class="p-3">RFI Name</th>
+                            <th class="p-3 text-center">Assigned Wards</th>
+                            <th class="p-3 text-center">Total Logged</th>
+                            <th class="p-3 text-center">Unique Accounts</th>
+                            <th class="p-3 text-center">Full Recovered</th>
+                            <th class="p-3 text-center">Pending Action</th>
+                            <th class="p-3 text-right">Total Recovered</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rfiSummaryBody" class="divide-y divide-slate-100">
+                        <tr><td colspan="7" class="p-4 text-center text-slate-400">No records logged yet</td></tr>
+                    </tbody>
+                    <tfoot id="rfiSummaryFoot" class="bg-slate-100 font-bold text-slate-900"></tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- AFI-wise Summary -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm sm:text-base">AFI-wise Recovery Summary</h3>
+                    <p class="text-xs text-slate-500">AFI performance breakdown by assigned Ward and collection metrics</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs sm:text-sm min-w-[750px]">
+                    <thead class="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
+                        <tr>
+                            <th class="p-3">AFI Name (With Helpers)</th>
+                            <th class="p-3">Ward No.</th>
+                            <th class="p-3 text-center">Total Logged</th>
+                            <th class="p-3 text-center">Unique Accounts</th>
+                            <th class="p-3 text-center">Full Recovered</th>
+                            <th class="p-3 text-center">Pending / Warnings</th>
+                            <th class="p-3 text-right">Total Recovered</th>
+                        </tr>
+                    </thead>
+                    <tbody id="afiSummaryBody" class="divide-y divide-slate-100">
+                        <tr><td colspan="7" class="p-4 text-center text-slate-400">No records logged yet</td></tr>
+                    </tbody>
+                    <tfoot id="afiSummaryFoot" class="bg-slate-100 font-bold text-slate-900"></tfoot>
+                </table>
+            </div>
+        </div>
+    </section>
+
     <!-- Custom Modal Container for Action Confirmations -->
     <div id="modal-container" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -321,13 +417,13 @@
         </div>
     </div>
 
-    <!-- JavaScript PWA and App Logic -->
+    <!-- JavaScript PWA and Logic -->
     <script>
         // Register Service Worker for offline capability
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const swCode = `
-                    const CACHE_NAME = 'field-supervisor-v1';
+                    const CACHE_NAME = 'field-supervisor-v2';
                     self.addEventListener('install', (e) => {
                         e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(['./'])));
                     });
@@ -361,49 +457,48 @@
                     document.getElementById('installAppBtn').classList.add('hidden');
                 });
             } else {
-                showToast("App is already installed or your browser doesn't support direct installation.", "warning");
+                showToast("App is already installed or direct installation isn't supported by browser.", "warning");
             }
         }
 
-        // Complete official Ward, RFI, and AFI mapping dataset (all 32 wards from staff record)
+        // Official Ward, RFI, Sub-Division and AFI mapping dataset from Incumbency Details Excel file
         const wardMappingData = [
-            { ward: "1", rfi: "Kashif Nasir", afi: "Rameez Hassan" },
-            { ward: "14", rfi: "Kashif Nasir", afi: "Mudaser Ali" },
-            { ward: "16", rfi: "Kashif Nasir", afi: "Kashif Nasir" },
-            { ward: "17", rfi: "Kashif Nasir", afi: "Usman Azam" },
-            { ward: "222", rfi: "Kashif Nasir", afi: "Kashif Nasir" },
-            { ward: "20", rfi: "Aon Shah", afi: "Adnan Masih" },
-            { ward: "217", rfi: "Aon Shah", afi: "Hafiz Salman Zahid" },
-            { ward: "219", rfi: "Aon Shah", afi: "Zaigham Faheem" },
-            { ward: "220", rfi: "Aon Shah", afi: "Muhammad Umar Sattar" },
-            { ward: "223", rfi: "Aon Shah", afi: "Ali Murtaza" },
-            { ward: "228", rfi: "Muhammad Naeem", afi: "Muhammad Awais" },
-            { ward: "2", rfi: "Muhammad Naeem", afi: "Abid Hussain" },
-            { ward: "10", rfi: "Muhammad Naeem", afi: "Aneel John" },
-            { ward: "13", rfi: "Muhammad Naeem", afi: "Tasawwar Sarwar" },
-            { ward: "225", rfi: "Muhammad Naeem", afi: "Muhammad Humayun Rasheed" },
-            { ward: "226", rfi: "Muhammad Naeem", afi: "Babar Mushtaq" },
-            { ward: "227", rfi: "Muhammad Sajid", afi: "Arslan Qureshi" },
-            { ward: "34", rfi: "Muhammad Sajid", afi: "Muhammad Sajid" },
-            { ward: "35", rfi: "Muhammad Sajid", afi: "Muhammad Sajid" },
-            { ward: "241", rfi: "Muhammad Sajid", afi: "Muhammad Sajid" },
-            { ward: "36", rfi: "Muhammad Rehan", afi: "Shahbaz Raza / Nauman" },
-            { ward: "38", rfi: "Muhammad Rehan", afi: "Naveed Khan" },
-            { ward: "40", rfi: "Muhammad Rehan", afi: "Shahbaz Ali Jutt" },
-            { ward: "41", rfi: "Muhammad Rehan", afi: "Nadeem Butt" },
-            { ward: "231", rfi: "Muhammad Rehan", afi: "Farooq e Azam" },
-            { ward: "235", rfi: "Muhammad Rehan", afi: "Kamran Ali" },
-            { ward: "243", rfi: "Muhammad Rehan", afi: "Ali Raza" },
-            { ward: "244", rfi: "Muhammad Rehan", afi: "Hamza Khalid" },
-            { ward: "245", rfi: "Muhammad Rehan", afi: "Hamza Ali Sonu" },
-            { ward: "246", rfi: "Muhammad Rehan", afi: "Hussain Sarwar" },
-            { ward: "247", rfi: "Muhammad Rehan", afi: "Zubair Ali" },
-            { ward: "248", rfi: "Hafiz Sadaat Ali", afi: "Hafiz Sadaat Ali" }
+            { ward: "2", subDiv: "Fatehgarh S/D", rfi: "Muhammad Naeem", afi: "Muhammad Awais (Ali Siddique)" },
+            { ward: "10", subDiv: "Fatehgarh S/D", rfi: "Muhammad Naeem", afi: "Abid Hussain" },
+            { ward: "13", subDiv: "Fatehgarh S/D", rfi: "Muhammad Naeem", afi: "Aneel John (Gulraiz Khan)" },
+            { ward: "225", subDiv: "Fatehgarh S/D", rfi: "Muhammad Naeem", afi: "Tasawwar Sarwar" },
+            { ward: "226", subDiv: "Fatehgarh S/D", rfi: "Muhammad Naeem", afi: "Humayun Rahseed (Muhammad Waseem)" },
+            { ward: "227", subDiv: "Fatehgarh S/D", rfi: "Muhammad Naeem", afi: "Babar Mushtaq (Qaiser Iqbal)" },
+            { ward: "1", subDiv: "Fatehgarh S/D", rfi: "Kashif Nasir", afi: "Rameez Hassan" },
+            { ward: "14", subDiv: "Fatehgarh S/D", rfi: "Kashif Nasir", afi: "Mudasser Ali" },
+            { ward: "16", subDiv: "Fatehgarh S/D", rfi: "Kashif Nasir", afi: "Kashif Nasir" },
+            { ward: "17", subDiv: "Fatehgarh S/D", rfi: "Kashif Nasir", afi: "Usman Azam" },
+            { ward: "222", subDiv: "Fatehgarh S/D", rfi: "Kashif Nasir", afi: "Kashif Nasir" },
+            { ward: "20", subDiv: "Fatehgarh S/D", rfi: "Aon Shah", afi: "Adnan Masih" },
+            { ward: "217", subDiv: "Fatehgarh S/D", rfi: "Aon Shah", afi: "Hafiz Salman Zahid" },
+            { ward: "219", subDiv: "Fatehgarh S/D", rfi: "Aon Shah", afi: "Zaigham Faheem" },
+            { ward: "220", subDiv: "Fatehgarh S/D", rfi: "Aon Shah", afi: "Muhammad Umer Sattar" },
+            { ward: "223", subDiv: "Fatehgarh S/D", rfi: "Aon Shah", afi: "Adnan Masih" },
+            { ward: "228", subDiv: "Fatehgarh S/D", rfi: "Aon Shah", afi: "Ali Murtaza" },
+            { ward: "34", subDiv: "Mustafabad S/D", rfi: "Muhammad Sajid", afi: "Arslan Qureshi" },
+            { ward: "35", subDiv: "Mustafabad S/D", rfi: "Muhammad Sajid", afi: "Muhammad Sajid" },
+            { ward: "241", subDiv: "Mustafabad S/D", rfi: "Muhammad Sajid", afi: "Muhammad Sajid , Waqas" },
+            { ward: "36", subDiv: "Tajpura S/D", rfi: "Muhammad Rehan", afi: "Shhabaz Raza, Rana Nauman" },
+            { ward: "38", subDiv: "Tajpura S/D", rfi: "Muhammad Rehan", afi: "Naveed Khan, Abdullah" },
+            { ward: "40", subDiv: "Tajpura S/D", rfi: "Muhammad Rehan", afi: "Shahbaz Ali" },
+            { ward: "41", subDiv: "Tajpura S/D", rfi: "Muhammad Rehan", afi: "Nadeem Butt" },
+            { ward: "231", subDiv: "Tajpura S/D", rfi: "Muhammad Rehan", afi: "Farooq e Azam, Muneeb Alam" },
+            { ward: "235", subDiv: "Tajpura S/D", rfi: "Muhammad Rehan", afi: "Kamran Ali" },
+            { ward: "243", subDiv: "Tajpura S/D", rfi: "Muhammad Rehan", afi: "Ali Raza" },
+            { ward: "244", subDiv: "Tajpura S/D", rfi: "Muhammad Rehan", afi: "Hamza Khalid, Kamran" },
+            { ward: "245", subDiv: "Tajpura S/D", rfi: "Muhammad Rehan", afi: "Hamza Ali" },
+            { ward: "246", subDiv: "Tajpura S/D", rfi: "Muhammad Rehan", afi: "Hussain Sarwar, Muhammad Musa" },
+            { ward: "247", subDiv: "Tajpura S/D", rfi: "Muhammad Rehan", afi: "Zubair Ali" }
         ];
 
         // State Management
         let records = [];
-        const STORAGE_KEY = 'field_supervisor_pwa_records_v1';
+        const STORAGE_KEY = 'field_supervisor_pwa_records_v2';
 
         // Initial Load setup
         window.onload = function() {
@@ -415,17 +510,20 @@
 
         function populateWardDropdown() {
             const wardSelect = document.getElementById('wardNo');
-            const uniqueWards = [...new Set(wardMappingData.map(item => item.ward))];
+            // Sort wards numerically
+            const uniqueWards = [...new Set(wardMappingData.map(item => item.ward))].sort((a,b) => parseInt(a) - parseInt(b));
             
             wardSelect.innerHTML = '<option value="">Select Ward...</option>' + 
                 uniqueWards.map(w => `<option value="${w}">Ward No ${w}</option>`).join('');
         }
 
         function handleWardChange(selectedWard) {
+            const subDivInput = document.getElementById('subDivision');
             const rfiInput = document.getElementById('nameRfi');
             const afiSelect = document.getElementById('nameAfi');
 
             if (!selectedWard) {
+                subDivInput.value = "";
                 rfiInput.value = "";
                 afiSelect.innerHTML = '<option value="">Select AFI...</option>';
                 return;
@@ -434,6 +532,7 @@
             const matchingRows = wardMappingData.filter(item => item.ward === selectedWard);
             
             if (matchingRows.length > 0) {
+                subDivInput.value = matchingRows[0].subDiv;
                 rfiInput.value = matchingRows[0].rfi;
                 afiSelect.innerHTML = '<option value="">Select AFI...</option>' + 
                     matchingRows.map(m => `<option value="${escapeHtml(m.afi)}">${escapeHtml(m.afi)}</option>`).join('');
@@ -442,6 +541,7 @@
                     afiSelect.value = matchingRows[0].afi;
                 }
             } else {
+                subDivInput.value = "";
                 rfiInput.value = "";
                 afiSelect.innerHTML = '<option value="">Select AFI...</option>';
             }
@@ -476,7 +576,7 @@
 
         function handleStatusChange(status) {
             const amountInput = document.getElementById('recoveryAmount');
-            if (status !== 'Fully Recovered' && status !== 'Paying in Installment') {
+            if (status !== 'Full Recovered' && status !== 'Paying in Installments') {
                 if (!amountInput.value || parseFloat(amountInput.value) === 0) {
                     amountInput.value = "0.00";
                 }
@@ -488,6 +588,7 @@
 
             const editIndex = parseInt(document.getElementById('editIndex').value);
             const wardNo = document.getElementById('wardNo').value;
+            const subDivision = document.getElementById('subDivision').value;
             const nameRfi = document.getElementById('nameRfi').value;
             const nameAfi = document.getElementById('nameAfi').value;
             const accountNumber = document.getElementById('accountNumber').value.trim();
@@ -498,6 +599,7 @@
 
             const entryData = {
                 wardNo,
+                subDivision,
                 nameRfi,
                 nameAfi,
                 accountNumber,
@@ -559,96 +661,11 @@
             );
         }
 
-        // Select All / Bulk Delete Logic
-        function toggleSelectAll(masterCheckbox) {
-            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
-            rowCheckboxes.forEach(cb => {
-                cb.checked = masterCheckbox.checked;
-            });
-            updateBulkDeleteButtonState();
-        }
-
-        function handleRowCheckboxChange() {
-            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
-            const masterCheckbox = document.getElementById('selectAllCheckbox');
-            
-            const allChecked = Array.from(rowCheckboxes).every(cb => cb.checked);
-            const someChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
-
-            masterCheckbox.checked = allChecked;
-            masterCheckbox.indeterminate = someChecked && !allChecked;
-
-            updateBulkDeleteButtonState();
-        }
-
-        function updateBulkDeleteButtonState() {
-            const selectedCount = document.querySelectorAll('.row-checkbox:checked').length;
-            const btn = document.getElementById('bulkDeleteBtn');
-            const btnText = document.getElementById('bulkDeleteText');
-
-            if (selectedCount > 0) {
-                btn.removeAttribute('disabled');
-                btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                btnText.innerText = `Delete (${selectedCount})`;
-            } else {
-                btn.setAttribute('disabled', 'true');
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
-                btnText.innerText = 'Delete Selected';
-            }
-        }
-
-        function confirmBulkDelete() {
-            const selectedIndices = Array.from(document.querySelectorAll('.row-checkbox:checked'))
-                .map(cb => parseInt(cb.getAttribute('data-index')));
-
-            if (selectedIndices.length === 0) return;
-
-            showConfirmationModal(
-                "Bulk Delete Records",
-                `Are you sure you want to delete ${selectedIndices.length} selected record(s)? This action cannot be undone.`,
-                function() {
-                    selectedIndices.sort((a, b) => b - a);
-                    selectedIndices.forEach(idx => {
-                        records.splice(idx, 1);
-                    });
-
-                    document.getElementById('selectAllCheckbox').checked = false;
-                    document.getElementById('selectAllCheckbox').indeterminate = false;
-
-                    saveLocalStorageData();
-                    renderTable();
-                    updateMetrics();
-                    updateBulkDeleteButtonState();
-                    showToast(`Successfully deleted ${selectedIndices.length} record(s).`, "warning");
-                }
-            );
-        }
-
-        function clearAllRecords() {
-            if (records.length === 0) {
-                showToast("No records to clear.", "warning");
-                return;
-            }
-            showConfirmationModal(
-                "Clear All Records",
-                "Are you sure you want to clear ALL logged data from your dashboard? This will remove all records permanently.",
-                function() {
-                    records = [];
-                    document.getElementById('selectAllCheckbox').checked = false;
-                    document.getElementById('selectAllCheckbox').indeterminate = false;
-                    saveLocalStorageData();
-                    renderTable();
-                    updateMetrics();
-                    updateBulkDeleteButtonState();
-                    showToast("All records cleared.", "warning");
-                }
-            );
-        }
-
         function resetForm() {
             document.getElementById('recordForm').reset();
             document.getElementById('editIndex').value = "-1";
             document.getElementById('collectionDate').value = getTodayString();
+            document.getElementById('subDivision').value = "";
             document.getElementById('nameRfi').value = "";
             document.getElementById('nameAfi').innerHTML = '<option value="">Select AFI...</option>';
 
@@ -676,146 +693,359 @@
 
             tbody.innerHTML = records.map((rec, index) => {
                 const statusBadgeStyle = getStatusStyle(rec.status);
-                const formattedAmount = 'Rs ' + parseFloat(rec.recoveryAmount || 0).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const formattedAmount = 'Rs. ' + new Intl.NumberFormat('en-PK', { maximumFractionDigits: 2 }).format(rec.recoveryAmount);
                 
                 return `
                     <tr class="hover:bg-slate-50/80 transition">
-                        <td class="py-3 px-3 text-center">
-                            <input type="checkbox" data-index="${index}" onclick="handleRowCheckboxChange()" class="row-checkbox rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4 cursor-pointer">
-                        </td>
                         <td class="py-3 px-3 font-bold text-sky-700">Ward ${escapeHtml(rec.wardNo)}</td>
                         <td class="py-3 px-3 text-slate-800 text-xs font-medium">${escapeHtml(rec.nameRfi)}</td>
                         <td class="py-3 px-3 text-slate-600 text-xs">${escapeHtml(rec.nameAfi)}</td>
                         <td class="py-3 px-3 font-semibold text-slate-900">${escapeHtml(rec.accountNumber)}</td>
-                        <td class="py-3 px-3 text-slate-600 text-xs">${escapeHtml(rec.collectionDate)}</td>
-                        <td class="py-3 px-3 font-semibold text-emerald-600">${formattedAmount}</td>
+                        <td class="py-3 px-3 text-slate-600 text-xs whitespace-nowrap">${formatDisplayDate(rec.collectionDate)}</td>
+                        <td class="py-3 px-3 font-medium ${rec.recoveryAmount > 0 ? 'text-emerald-600' : 'text-slate-400'}">${formattedAmount}</td>
                         <td class="py-3 px-3">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadgeStyle}">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${statusBadgeStyle}">
                                 ${escapeHtml(rec.status)}
                             </span>
                         </td>
-                        <td class="py-3 px-3 text-right space-x-1">
-                            <button onclick="editRecord(${index})" title="Edit Record" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition">
-                                <i class="fa-regular fa-pen-to-square text-xs"></i>
-                            </button>
-                            <button onclick="confirmDeleteRecord(${index})" title="Delete Record" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition">
-                                <i class="fa-regular fa-trash-can text-xs"></i>
-                            </button>
+                        <td class="py-3 px-3 text-right">
+                            <div class="flex items-center justify-end space-x-1">
+                                <button onclick="editRecord(${index})" title="Edit" 
+                                    class="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition">
+                                    <i class="fa-solid fa-pen text-xs"></i>
+                                </button>
+                                <button onclick="confirmDeleteRecord(${index})" title="Delete" 
+                                    class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
+                                    <i class="fa-solid fa-trash text-xs"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
             }).join('');
         }
 
-        function getStatusStyle(status) {
-            switch(status) {
-                case 'Fully Recovered':
-                    return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-                case 'Paying in Installment':
-                    return 'bg-blue-50 text-blue-700 border border-blue-200';
-                case 'Disconnection on Arrears':
-                    return 'bg-rose-50 text-rose-700 border border-rose-200';
-                case 'File Status':
-                    return 'bg-purple-50 text-purple-700 border border-purple-200';
-                case 'Application by Consumer':
-                    return 'bg-amber-50 text-amber-700 border border-amber-200';
-                case 'Property Locked':
-                    return 'bg-slate-100 text-slate-700 border border-slate-200';
-                default:
-                    return 'bg-slate-100 text-slate-700 border border-slate-200';
-            }
-        }
-
         function updateMetrics() {
             const totalCount = records.length;
             const totalAmount = records.reduce((sum, r) => sum + (parseFloat(r.recoveryAmount) || 0), 0);
-            const pendingCount = records.filter(r => r.status !== 'Fully Recovered').length;
+            const pendingCount = records.filter(r => r.status !== 'Full Recovered').length;
 
             document.getElementById('stat-total-count').innerText = totalCount;
-            document.getElementById('stat-total-amount').innerText = 'Rs ' + totalAmount.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('stat-total-amount').innerText = 'Rs. ' + new Intl.NumberFormat('en-PK', { maximumFractionDigits: 2 }).format(totalAmount);
             document.getElementById('stat-pending-count').innerText = pendingCount;
+            updateSummaries();
         }
 
-        function exportExcel() {
-            if (records.length === 0) {
-                showToast("No data available to export.", "warning");
-                return;
-            }
-
-            const exportData = records.map(r => ({
-                "Ward No": r.wardNo,
-                "RFI Name": r.nameRfi,
-                "AFI Name": r.nameAfi,
-                "Account ID": r.accountNumber,
-                "Collection Date": r.collectionDate,
-                "Recovery Amount (Rs)": r.recoveryAmount,
-                "Status": r.status,
-                "Remarks": r.remarks,
-                "Last Updated": r.updatedAt
-            }));
-
-            const worksheet = XLSX.utils.json_to_sheet(exportData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Field Log");
-            XLSX.writeFile(workbook, `Field_Supervisor_Log_${getTodayString()}.xlsx`);
-            showToast("Excel file downloaded successfully!", "success");
+        function formatSummaryAmount(amount) {
+            return 'Rs. ' + new Intl.NumberFormat('en-PK', { maximumFractionDigits: 2 }).format(amount || 0);
         }
 
-        function exportCSV() {
-            if (records.length === 0) {
-                showToast("No data available to export.", "warning");
-                return;
+        function updateSummaries() {
+            const wardGroups = new Map();
+            const rfiGroups = new Map();
+            const afiGroups = new Map();
+
+            records.forEach(rec => {
+                const amount = parseFloat(rec.recoveryAmount) || 0;
+                const account = String(rec.accountNumber || '').trim();
+                const ward = String(rec.wardNo || 'Unknown');
+                const subDiv = String(rec.subDivision || '');
+                const rfi = String(rec.nameRfi || 'Unassigned');
+                const afi = String(rec.nameAfi || 'Unassigned');
+                const status = rec.status;
+
+                // Ward Grouping
+                if (!wardGroups.has(ward)) {
+                    wardGroups.set(ward, { subDiv, totalEntries: 0, accounts: new Set(), fullRecovered: 0, pending: 0, amount: 0 });
+                }
+                const wg = wardGroups.get(ward);
+                wg.totalEntries++;
+                if (account) wg.accounts.add(account);
+                if (status === 'Full Recovered') wg.fullRecovered++; else wg.pending++;
+                wg.amount += amount;
+
+                // RFI Grouping
+                if (!rfiGroups.has(rfi)) {
+                    rfiGroups.set(rfi, { wards: new Set(), totalEntries: 0, accounts: new Set(), fullRecovered: 0, pending: 0, amount: 0 });
+                }
+                const rg = rfiGroups.get(rfi);
+                rg.wards.add(ward);
+                rg.totalEntries++;
+                if (account) rg.accounts.add(account);
+                if (status === 'Full Recovered') rg.fullRecovered++; else rg.pending++;
+                rg.amount += amount;
+
+                // AFI Grouping (per AFI & Ward)
+                const afiKey = `${afi}|||${ward}`;
+                if (!afiGroups.has(afiKey)) {
+                    afiGroups.set(afiKey, { afi, ward, totalEntries: 0, accounts: new Set(), fullRecovered: 0, pending: 0, amount: 0 });
+                }
+                const ag = afiGroups.get(afiKey);
+                ag.totalEntries++;
+                if (account) ag.accounts.add(account);
+                if (status === 'Full Recovered') ag.fullRecovered++; else ag.pending++;
+                ag.amount += amount;
+            });
+
+            // 1. Render Ward Summary
+            const wardRows = [...wardGroups.entries()].sort((a,b) => parseInt(a[0]) - parseInt(b[0]));
+            const wardBody = document.getElementById('wardSummaryBody');
+            const wardFoot = document.getElementById('wardSummaryFoot');
+            
+            if (!wardRows.length) {
+                wardBody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">No records logged yet</td></tr>';
+                wardFoot.innerHTML = '';
+            } else {
+                wardBody.innerHTML = wardRows.map(([ward, g]) => `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 font-bold text-sky-700">Ward ${escapeHtml(ward)}</td>
+                        <td class="p-3 text-slate-600">${escapeHtml(g.subDiv)}</td>
+                        <td class="p-3 text-center font-medium">${g.totalEntries}</td>
+                        <td class="p-3 text-center font-medium text-slate-800">${g.accounts.size}</td>
+                        <td class="p-3 text-center text-emerald-600 font-semibold">${g.fullRecovered}</td>
+                        <td class="p-3 text-center text-amber-600 font-semibold">${g.pending}</td>
+                        <td class="p-3 text-right font-semibold text-emerald-600">${formatSummaryAmount(g.amount)}</td>
+                    </tr>
+                `).join('');
+
+                const totalEntries = records.length;
+                const totalUniqueAcc = new Set(records.map(r => String(r.accountNumber || '').trim()).filter(Boolean)).size;
+                const totalFull = records.filter(r => r.status === 'Full Recovered').length;
+                const totalPend = totalEntries - totalFull;
+                const totalAmt = records.reduce((sum, r) => sum + (parseFloat(r.recoveryAmount) || 0), 0);
+
+                wardFoot.innerHTML = `
+                    <tr class="bg-slate-100 font-bold border-t border-slate-200">
+                        <td class="p-3" colspan="2">TOTAL SUMMARY</td>
+                        <td class="p-3 text-center">${totalEntries}</td>
+                        <td class="p-3 text-center">${totalUniqueAcc}</td>
+                        <td class="p-3 text-center text-emerald-700">${totalFull}</td>
+                        <td class="p-3 text-center text-amber-700">${totalPend}</td>
+                        <td class="p-3 text-right text-emerald-700">${formatSummaryAmount(totalAmt)}</td>
+                    </tr>
+                `;
             }
 
-            const exportData = records.map(r => ({
-                "Ward No": r.wardNo,
-                "RFI Name": r.nameRfi,
-                "AFI Name": r.nameAfi,
-                "Account ID": r.accountNumber,
-                "Collection Date": r.collectionDate,
-                "Recovery Amount (Rs)": r.recoveryAmount,
-                "Status": r.status,
-                "Remarks": r.remarks
-            }));
+            // 2. Render RFI Summary
+            const rfiRows = [...rfiGroups.entries()].sort((a,b) => a[0].localeCompare(b[0]));
+            const rfiBody = document.getElementById('rfiSummaryBody');
+            const rfiFoot = document.getElementById('rfiSummaryFoot');
+            
+            if (!rfiRows.length) {
+                rfiBody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">No records logged yet</td></tr>';
+                rfiFoot.innerHTML = '';
+            } else {
+                rfiBody.innerHTML = rfiRows.map(([name, g]) => `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 font-semibold text-slate-900">${escapeHtml(name)}</td>
+                        <td class="p-3 text-center font-medium text-slate-600">${g.wards.size} Wards (${[...g.wards].join(', ')})</td>
+                        <td class="p-3 text-center font-medium">${g.totalEntries}</td>
+                        <td class="p-3 text-center font-medium text-slate-800">${g.accounts.size}</td>
+                        <td class="p-3 text-center text-emerald-600 font-semibold">${g.fullRecovered}</td>
+                        <td class="p-3 text-center text-amber-600 font-semibold">${g.pending}</td>
+                        <td class="p-3 text-right font-semibold text-emerald-600">${formatSummaryAmount(g.amount)}</td>
+                    </tr>
+                `).join('');
 
-            const worksheet = XLSX.utils.json_to_sheet(exportData);
-            const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
-            const blob = new Blob([csvOutput], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Field_Supervisor_Log_${getTodayString()}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast("CSV file exported successfully!", "success");
+                const totalWardsCount = new Set(records.map(r => String(r.wardNo || '')).filter(Boolean)).size;
+                const totalEntries = records.length;
+                const totalUniqueAcc = new Set(records.map(r => String(r.accountNumber || '').trim()).filter(Boolean)).size;
+                const totalFull = records.filter(r => r.status === 'Full Recovered').length;
+                const totalPend = totalEntries - totalFull;
+                const totalAmt = records.reduce((sum, r) => sum + (parseFloat(r.recoveryAmount) || 0), 0);
+
+                rfiFoot.innerHTML = `
+                    <tr class="bg-slate-100 font-bold border-t border-slate-200">
+                        <td class="p-3">TOTAL SUMMARY</td>
+                        <td class="p-3 text-center">${totalWardsCount} Wards</td>
+                        <td class="p-3 text-center">${totalEntries}</td>
+                        <td class="p-3 text-center">${totalUniqueAcc}</td>
+                        <td class="p-3 text-center text-emerald-700">${totalFull}</td>
+                        <td class="p-3 text-center text-amber-700">${totalPend}</td>
+                        <td class="p-3 text-right text-emerald-700">${formatSummaryAmount(totalAmt)}</td>
+                    </tr>
+                `;
+            }
+
+            // 3. Render AFI Summary
+            const afiRows = [...afiGroups.values()].sort((a,b) => a.afi.localeCompare(b.afi) || parseInt(a.ward) - parseInt(b.ward));
+            const afiBody = document.getElementById('afiSummaryBody');
+            const afiFoot = document.getElementById('afiSummaryFoot');
+            
+            if (!afiRows.length) {
+                afiBody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">No records logged yet</td></tr>';
+                afiFoot.innerHTML = '';
+            } else {
+                afiBody.innerHTML = afiRows.map(g => `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 font-semibold text-slate-900">${escapeHtml(g.afi)}</td>
+                        <td class="p-3 font-bold text-sky-700">Ward ${escapeHtml(g.ward)}</td>
+                        <td class="p-3 text-center font-medium">${g.totalEntries}</td>
+                        <td class="p-3 text-center font-medium text-slate-800">${g.accounts.size}</td>
+                        <td class="p-3 text-center text-emerald-600 font-semibold">${g.fullRecovered}</td>
+                        <td class="p-3 text-center text-amber-600 font-semibold">${g.pending}</td>
+                        <td class="p-3 text-right font-semibold text-emerald-600">${formatSummaryAmount(g.amount)}</td>
+                    </tr>
+                `).join('');
+
+                const totalEntries = records.length;
+                const totalUniqueAcc = new Set(records.map(r => String(r.accountNumber || '').trim()).filter(Boolean)).size;
+                const totalFull = records.filter(r => r.status === 'Full Recovered').length;
+                const totalPend = totalEntries - totalFull;
+                const totalAmt = records.reduce((sum, r) => sum + (parseFloat(r.recoveryAmount) || 0), 0);
+
+                afiFoot.innerHTML = `
+                    <tr class="bg-slate-100 font-bold border-t border-slate-200">
+                        <td class="p-3" colspan="2">TOTAL SUMMARY</td>
+                        <td class="p-3 text-center">${totalEntries}</td>
+                        <td class="p-3 text-center">${totalUniqueAcc}</td>
+                        <td class="p-3 text-center text-emerald-700">${totalFull}</td>
+                        <td class="p-3 text-center text-amber-700">${totalPend}</td>
+                        <td class="p-3 text-right text-emerald-700">${formatSummaryAmount(totalAmt)}</td>
+                    </tr>
+                `;
+            }
+        }
+
+        function getStatusStyle(status) {
+            switch(status) {
+                case 'Full Recovered': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                case 'Paying in Installments': return 'bg-amber-50 text-amber-700 border-amber-200';
+                case 'Disconnected / Not Paying': return 'bg-rose-50 text-rose-700 border-rose-200';
+                case 'Property Locked': return 'bg-purple-50 text-purple-700 border-purple-200';
+                case 'Notice / Filed Status': return 'bg-orange-50 text-orange-700 border-orange-200';
+                case 'Warning ⚠️ to Pay Bill': return 'bg-amber-100 text-amber-800 border-amber-300';
+                default: return 'bg-slate-50 text-slate-600 border-slate-200';
+            }
         }
 
         function copyToClipboard() {
             if (records.length === 0) {
-                showToast("No data available to copy.", "warning");
+                showToast("No data available to copy.", "error");
                 return;
             }
 
-            const headers = ["Ward No", "RFI Name", "AFI Name", "Account ID", "Collection Date", "Recovery Amount (Rs)", "Status", "Remarks"];
-            const rows = records.map(r => [
-                r.wardNo,
-                r.nameRfi,
-                r.nameAfi,
-                r.accountNumber,
-                r.collectionDate,
-                r.recoveryAmount,
-                r.status,
-                r.remarks
-            ]);
-
-            const tsvContent = [headers.join("\t"), ...rows.map(e => e.join("\t"))].join("\n");
-
-            navigator.clipboard.writeText(tsvContent).then(() => {
-                showToast("Copied to clipboard! Ready to paste into Excel.", "success");
-            }).catch(err => {
-                console.error('Clipboard copy failed', err);
-                showToast("Failed to copy data.", "warning");
+            let tsv = "Ward No\tSub Division\tName of RFI's\tName of AFI's\tAccount Number\tCollection Date\tRecovery Amount\tStatus\tField Remarks\n";
+            records.forEach(r => {
+                tsv += `${r.wardNo}\t${r.subDivision || ''}\t${r.nameRfi}\t${r.nameAfi}\t${r.accountNumber}\t${r.collectionDate}\t${r.recoveryAmount}\t${r.status}\t${(r.remarks || '').replace(/\s+/g, ' ')}\n`;
             });
+
+            const textarea = document.createElement('textarea');
+            textarea.value = tsv;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            try {
+                if (document.execCommand('copy')) {
+                    showToast("Copied! Paste directly into Excel (Tab-Separated).", "success");
+                } else {
+                    showToast("Failed to copy data.", "error");
+                }
+            } catch (err) {
+                showToast("Copy command error.", "error");
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+
+        function exportExcel() {
+            if (records.length === 0) {
+                showToast("No records available to export.", "error");
+                return;
+            }
+
+            const excelData = records.map((r, idx) => ({
+                "S.No": idx + 1,
+                "Sub Division": r.subDivision || "",
+                "Ward No": r.wardNo,
+                "Name of RFI's": r.nameRfi,
+                "Name of AFI's": r.nameAfi,
+                "Account Number": r.accountNumber,
+                "Collection Date": formatDisplayDate(r.collectionDate),
+                "Recovery Amount (Rs.)": Number(r.recoveryAmount) || 0,
+                "Status": r.status,
+                "Remarks": r.remarks || ""
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            worksheet['!cols'] = [
+                {wch: 6}, {wch: 18}, {wch: 10}, {wch: 22}, {wch: 28}, {wch: 18}, {wch: 15}, {wch: 20}, {wch: 25}, {wch: 30}
+            ];
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Field Collections");
+            XLSX.writeFile(workbook, `Field_Supervisor_Wards_Log_${getTodayString()}.xlsx`);
+            showToast("Excel spreadsheet (.xlsx) downloaded successfully!", "success");
+        }
+
+        function exportCSV() {
+            if (records.length === 0) {
+                showToast("No records available to export.", "error");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Ward No,Sub Division,Name of RFI's,Name of AFI's,Account Number,Collection Date,Recovery Amount,Status,Remarks\n";
+
+            records.forEach(r => {
+                const cleanRemarks = `"${(r.remarks || '').replace(/"/g, '""')}"`;
+                const cleanAccount = `"${r.accountNumber.replace(/"/g, '""')}"`;
+                const cleanSubDiv = `"${(r.subDivision || '').replace(/"/g, '""')}"`;
+                const cleanRfi = `"${r.nameRfi.replace(/"/g, '""')}"`;
+                const cleanAfi = `"${r.nameAfi.replace(/"/g, '""')}"`;
+                csvContent += `${r.wardNo},${cleanSubDiv},${cleanRfi},${cleanAfi},${cleanAccount},${r.collectionDate},${r.recoveryAmount},"${r.status}",${cleanRemarks}\n`;
+            });
+
+            const link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csvContent));
+            link.setAttribute("download", `Field_Supervisor_Wards_Log_${getTodayString()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast("CSV file downloaded successfully.", "success");
+        }
+
+        function clearAllRecords() {
+            if (records.length === 0) return;
+
+            showConfirmationModal(
+                "Clear All Log Data",
+                "Are you sure you want to delete ALL records? This action cannot be undone.",
+                function() {
+                    records = [];
+                    saveLocalStorageData();
+                    renderTable();
+                    updateMetrics();
+                    resetForm();
+                    showToast("All records cleared.", "warning");
+                }
+            );
+        }
+
+        function showToast(message, type = "success") {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMessage.innerText = message;
+            if (type === 'success') {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-xl";
+            } else if (type === 'warning') {
+                toastIcon.className = "fa-solid fa-triangle-exclamation text-amber-400 text-xl";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-xmark text-rose-400 text-xl";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
         }
 
         function showConfirmationModal(title, message, onConfirm) {
@@ -826,58 +1056,26 @@
             container.classList.remove('hidden');
             setTimeout(() => container.classList.remove('opacity-0'), 10);
 
-            const confirmBtn = document.getElementById('modal-confirm-btn');
-            const cancelBtn = document.getElementById('modal-cancel-btn');
+            const closeModal = () => {
+                container.classList.add('opacity-0');
+                setTimeout(() => container.classList.add('hidden'), 200);
+            };
 
-            const newConfirmBtn = confirmBtn.cloneNode(true);
-            const newCancelBtn = cancelBtn.cloneNode(true);
-            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-
-            newConfirmBtn.addEventListener('click', () => {
+            document.getElementById('modal-confirm-btn').onclick = () => {
                 closeModal();
                 onConfirm();
-            });
-
-            newCancelBtn.addEventListener('click', closeModal);
-            container.addEventListener('click', (e) => {
-                if (e.target === container) closeModal();
-            }, { once: true });
-        }
-
-        function closeModal() {
-            const container = document.getElementById('modal-container');
-            container.classList.add('opacity-0');
-            setTimeout(() => container.classList.add('hidden'), 200);
-        }
-
-        function showToast(message, type = "success") {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toast-message');
-            const toastIcon = document.getElementById('toast-icon');
-
-            toastMessage.innerText = message;
-
-            if (type === "success") {
-                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-xl";
-            } else if (type === "warning") {
-                toastIcon.className = "fa-solid fa-triangle-exclamation text-amber-400 text-xl";
-            }
-
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
+            };
+            document.getElementById('modal-cancel-btn').onclick = closeModal;
         }
 
         function escapeHtml(str) {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function formatDisplayDate(dateStr) {
+            if (!dateStr) return '';
+            const parts = dateStr.split('-');
+            return parts.length === 3 ? `${parts[1]}/${parts[2]}/${parts[0]}` : dateStr;
         }
     </script>
 </body>
