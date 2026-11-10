@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0284c7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Field Supervisor">
+    <title>Field Supervisor Assistant</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS (xlsx) for native Excel file generation -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <!-- PWA Web Manifest (Inline Data URI) -->
+    <link rel="manifest" href='data:application/manifest+json,{
+        "name": "Field Supervisor Assistant",
+        "short_name": "FieldAssist",
+        "start_url": "./",
+        "display": "standalone",
+        "background_color": "#f1f5f9",
+        "theme_color": "#0284c7",
+        "icons": [
+            {
+                "src": "https://placehold.co/192x192/0284c7/ffffff?text=FSA",
+                "sizes": "192x192",
+                "type": "image/png"
+            },
+            {
+                "src": "https://placehold.co/512x512/0284c7/ffffff?text=FSA",
+                "sizes": "512x512",
+                "type": "image/png"
+            }
+        ]
+    }'>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen flex flex-col justify-between selection:bg-sky-500 selection:text-white">
+
+    <!-- Toast Notification Banner -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 max-w-sm w-full bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center space-x-3">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-xl"></i>
+        <div class="flex-1 text-sm font-medium" id="toast-message">Action completed successfully</div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-sky-600 flex items-center justify-center text-white font-bold shadow-md shadow-sky-600/30">
+                    <i class="fa-solid fa-clipboard-user text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-900 text-base sm:text-lg leading-tight">Field Supervisor PWA</h1>
+                    <p class="text-xs text-slate-500 hidden sm:block">Ward, RFI, AFI & Recovery Management</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <!-- Install PWA Button -->
+                <button id="installAppBtn" onclick="installPWA()" class="hidden bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs px-3 py-2 rounded-xl transition items-center gap-1.5 shadow-sm animate-pulse">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Install App</span>
+                </button>
+
+                <button onclick="exportExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-file-excel"></i>
+                    <span class="hidden sm:inline">Excel</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Form and Stats -->
+        <div class="lg:col-span-5 space-y-6">
+            
+            <!-- Summary Stats Card -->
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Entries</span>
+                    <span id="stat-total-count" class="text-xl font-bold text-slate-900 mt-1">0</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Collected</span>
+                    <span id="stat-total-amount" class="text-xl font-bold text-emerald-600 mt-1">Rs 0.00</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pending</span>
+                    <span id="stat-pending-count" class="text-xl font-bold text-amber-600 mt-1">0</span>
+                </div>
+            </div>
+
+            <!-- Entry Form Card -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
+                <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                    <h2 id="form-title" class="font-bold text-slate-900 text-base">Entry Logging Form</h2>
+                    <span id="edit-badge" class="hidden text-xs bg-amber-50 text-amber-700 font-medium px-2.5 py-0.5 rounded-full border border-amber-200">Editing Mode</span>
+                </div>
+
+                <form id="recordForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                    <input type="hidden" id="editIndex" value="-1">
+
+                    <!-- Ward Number Selection -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Ward No *</label>
+                        <select id="wardNo" required onchange="handleWardChange(this.value)" 
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
+                            <option value="">Select Ward...</option>
+                        </select>
+                    </div>
+
+                    <!-- Auto-populated RFI Name -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Name of RFI's (Auto)</label>
+                        <input type="text" id="nameRfi" readonly placeholder="Auto-populated from Ward"
+                            class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-600 cursor-not-allowed">
+                    </div>
+
+                    <!-- AFI Name Selection -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Name of AFI's *</label>
+                        <select id="nameAfi" required 
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
+                            <option value="">Select AFI...</option>
+                        </select>
+                    </div>
+
+                    <!-- Account ID / Number -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Account ID / Number *</label>
+                        <input type="text" id="accountNumber" required placeholder="e.g. ACC-849201"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Collection Date -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Collection Date *</label>
+                            <input type="date" id="collectionDate" required 
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
+                        </div>
+
+                        <!-- Recovery Amount -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Recovery Amount (Rs) *</label>
+                            <input type="number" id="recoveryAmount" step="0.01" min="0" required placeholder="0.00" 
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
+                        </div>
+                    </div>
+
+                    <!-- Status Dropdown -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Status *</label>
+                        <select id="statusSelect" required onchange="handleStatusChange(this.value)"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
+                            <option value="Fully Recovered">Fully Recovered</option>
+                            <option value="Paying in Installment">Paying in Installment</option>
+                            <option value="Disconnection on Arrears">Disconnection on Arrears</option>
+                            <option value="File Status">File Status</option>
+                            <option value="Application by Consumer">Meter Defective</option>
+                            <option value="Property Locked">Property Locked</option>
+                        </select>
+                    </div>
+
+                    <!-- Remarks -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Field Remarks / Notes</label>
+                        <textarea id="remarks" rows="2" placeholder="Add any additional site observations..."
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition"></textarea>
+                    </div>
+
+                    <!-- Form Action Buttons -->
+                    <div class="flex items-center gap-3 pt-2">
+                        <button type="submit" id="btnSubmit" 
+                            class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-4 rounded-xl shadow-md shadow-sky-600/20 transition flex items-center justify-center gap-2 active:scale-95">
+                            <i id="btnSubmitIcon" class="fa-solid fa-plus text-sm"></i>
+                            <span id="btnSubmitText">Add Record</span>
+                        </button>
+                        <button type="button" onclick="resetForm()" 
+                            class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-xl transition">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Column: Data Log Table & Export tools -->
+        <div class="lg:col-span-7 flex flex-col bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
+            
+            <!-- Table Header & Action Tools -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <h2 class="font-bold text-slate-900 text-lg flex items-center gap-2">
+                        <span>Field Log Entries</span>
+                        <span id="badge-count" class="text-xs bg-slate-100 text-slate-600 font-medium px-2.5 py-0.5 rounded-full border border-slate-200">0</span>
+                    </h2>
+                </div>
+
+                <!-- Export and Copy Actions -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button id="bulkDeleteBtn" onclick="confirmBulkDelete()" disabled
+                        class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium text-xs rounded-xl border border-rose-200 transition flex items-center gap-1.5 opacity-50 cursor-not-allowed">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span id="bulkDeleteText">Delete Selected</span>
+                    </button>
+
+                    <button onclick="exportExcel()" 
+                        class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 active:scale-95">
+                        <i class="fa-solid fa-file-excel"></i>
+                        <span>Excel</span>
+                    </button>
+
+                    <button onclick="copyToClipboard()" 
+                        class="px-3.5 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 font-medium text-xs rounded-xl border border-sky-200 transition flex items-center gap-1.5 active:scale-95">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>Copy</span>
+                    </button>
+
+                    <button onclick="exportCSV()" 
+                        class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs rounded-xl border border-slate-200 transition flex items-center gap-1.5 active:scale-95">
+                        <i class="fa-solid fa-file-csv text-slate-600"></i>
+                        <span>CSV</span>
+                    </button>
+
+                    <button onclick="clearAllRecords()" title="Clear All Logged Data" 
+                        class="p-2 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl border border-slate-200 hover:border-rose-200 transition">
+                        <i class="fa-solid fa-trash-arrow-up"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="overflow-x-auto custom-scrollbar flex-1 -mx-5 sm:mx-0">
+                <table class="w-full text-left text-sm border-collapse min-w-[750px]">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            <th class="py-3 px-3 w-10 text-center">
+                                <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)" class="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4 cursor-pointer" title="Select All Records">
+                            </th>
+                            <th class="py-3 px-3">Ward</th>
+                            <th class="py-3 px-3">RFI</th>
+                            <th class="py-3 px-3">AFI</th>
+                            <th class="py-3 px-3">Account ID</th>
+                            <th class="py-3 px-3">Date</th>
+                            <th class="py-3 px-3">Amount</th>
+                            <th class="py-3 px-3">Status</th>
+                            <th class="py-3 px-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTableBody" class="divide-y divide-slate-100">
+                        <!-- Dynamic Content Rendered Here -->
+                    </tbody>
+                </table>
+
+                <!-- Empty State Graphic -->
+                <div id="emptyState" class="py-16 text-center space-y-3">
+                    <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 inline-flex items-center justify-center text-2xl">
+                        <i class="fa-regular fa-folder-open"></i>
+                    </div>
+                    <p class="text-sm font-medium text-slate-500">No data collected yet</p>
+                    <p class="text-xs text-slate-400 max-w-xs mx-auto">Select a Ward, RFI, and AFI combination to start logging your field collections.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Custom Modal Container for Action Confirmations -->
+    <div id="modal-container" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex items-center space-x-3 text-rose-600">
+                <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                <h3 id="modal-title" class="font-bold text-slate-900 text-lg">Confirm Action</h3>
+            </div>
+            <p id="modal-message" class="text-slate-600 text-sm">Are you sure you want to perform this action?</p>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button id="modal-cancel-btn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl transition">
+                    Cancel
+                </button>
+                <button id="modal-confirm-btn" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-xl transition shadow-md shadow-rose-600/20">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript PWA and App Logic -->
+    <script>
+        // Register Service Worker for offline capability
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    const CACHE_NAME = 'field-supervisor-v1';
+                    self.addEventListener('install', (e) => {
+                        e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(['./'])));
+                    });
+                    self.addEventListener('fetch', (e) => {
+                        e.respondWith(caches.match(e.request).then((res) => res || fetch(e.request)));
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'text/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed', err));
+            });
+        }
+
+        // Deferred prompt for PWA installation
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installAppBtn').classList.remove('hidden');
+            document.getElementById('installAppBtn').classList.add('flex');
+        });
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        showToast("App installed successfully!", "success");
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('installAppBtn').classList.add('hidden');
+                });
+            } else {
+                showToast("App is already installed or your browser doesn't support direct installation.", "warning");
+            }
+        }
+
+        // Complete official Ward, RFI, and AFI mapping dataset (all 32 wards from staff record)
+        const wardMappingData = [
+            { ward: "1", rfi: "Kashif Nasir", afi: "Rameez Hassan" },
+            { ward: "14", rfi: "Kashif Nasir", afi: "Mudaser Ali" },
+            { ward: "16", rfi: "Kashif Nasir", afi: "Kashif Nasir" },
+            { ward: "17", rfi: "Kashif Nasir", afi: "Usman Azam" },
+            { ward: "222", rfi: "Kashif Nasir", afi: "Kashif Nasir" },
+            { ward: "20", rfi: "Aon Shah", afi: "Adnan Masih" },
+            { ward: "217", rfi: "Aon Shah", afi: "Hafiz Salman Zahid" },
+            { ward: "219", rfi: "Aon Shah", afi: "Zaigham Faheem" },
+            { ward: "220", rfi: "Aon Shah", afi: "Muhammad Umar Sattar" },
+            { ward: "223", rfi: "Aon Shah", afi: "Ali Murtaza" },
+            { ward: "228", rfi: "Muhammad Naeem", afi: "Muhammad Awais" },
+            { ward: "2", rfi: "Muhammad Naeem", afi: "Abid Hussain" },
+            { ward: "10", rfi: "Muhammad Naeem", afi: "Aneel John" },
+            { ward: "13", rfi: "Muhammad Naeem", afi: "Tasawwar Sarwar" },
+            { ward: "225", rfi: "Muhammad Naeem", afi: "Muhammad Humayun Rasheed" },
+            { ward: "226", rfi: "Muhammad Naeem", afi: "Babar Mushtaq" },
+            { ward: "227", rfi: "Muhammad Sajid", afi: "Arslan Qureshi" },
+            { ward: "34", rfi: "Muhammad Sajid", afi: "Muhammad Sajid" },
+            { ward: "35", rfi: "Muhammad Sajid", afi: "Muhammad Sajid" },
+            { ward: "241", rfi: "Muhammad Sajid", afi: "Muhammad Sajid" },
+            { ward: "36", rfi: "Muhammad Rehan", afi: "Shahbaz Raza / Nauman" },
+            { ward: "38", rfi: "Muhammad Rehan", afi: "Naveed Khan" },
+            { ward: "40", rfi: "Muhammad Rehan", afi: "Shahbaz Ali Jutt" },
+            { ward: "41", rfi: "Muhammad Rehan", afi: "Nadeem Butt" },
+            { ward: "231", rfi: "Muhammad Rehan", afi: "Farooq e Azam" },
+            { ward: "235", rfi: "Muhammad Rehan", afi: "Kamran Ali" },
+            { ward: "243", rfi: "Muhammad Rehan", afi: "Ali Raza" },
+            { ward: "244", rfi: "Muhammad Rehan", afi: "Hamza Khalid" },
+            { ward: "245", rfi: "Muhammad Rehan", afi: "Hamza Ali Sonu" },
+            { ward: "246", rfi: "Muhammad Rehan", afi: "Hussain Sarwar" },
+            { ward: "247", rfi: "Muhammad Rehan", afi: "Zubair Ali" },
+            { ward: "248", rfi: "Hafiz Sadaat Ali", afi: "Hafiz Sadaat Ali" }
+        ];
+
+        // State Management
+        let records = [];
+        const STORAGE_KEY = 'field_supervisor_pwa_records_v1';
+
+        // Initial Load setup
+        window.onload = function() {
+            populateWardDropdown();
+            document.getElementById('collectionDate').value = getTodayString();
+            loadLocalStorageData();
+            handleStatusChange(document.getElementById('statusSelect').value);
+        };
+
+        function populateWardDropdown() {
+            const wardSelect = document.getElementById('wardNo');
+            const uniqueWards = [...new Set(wardMappingData.map(item => item.ward))];
+            
+            wardSelect.innerHTML = '<option value="">Select Ward...</option>' + 
+                uniqueWards.map(w => `<option value="${w}">Ward No ${w}</option>`).join('');
+        }
+
+        function handleWardChange(selectedWard) {
+            const rfiInput = document.getElementById('nameRfi');
+            const afiSelect = document.getElementById('nameAfi');
+
+            if (!selectedWard) {
+                rfiInput.value = "";
+                afiSelect.innerHTML = '<option value="">Select AFI...</option>';
+                return;
+            }
+
+            const matchingRows = wardMappingData.filter(item => item.ward === selectedWard);
+            
+            if (matchingRows.length > 0) {
+                rfiInput.value = matchingRows[0].rfi;
+                afiSelect.innerHTML = '<option value="">Select AFI...</option>' + 
+                    matchingRows.map(m => `<option value="${escapeHtml(m.afi)}">${escapeHtml(m.afi)}</option>`).join('');
+                
+                if (matchingRows.length === 1) {
+                    afiSelect.value = matchingRows[0].afi;
+                }
+            } else {
+                rfiInput.value = "";
+                afiSelect.innerHTML = '<option value="">Select AFI...</option>';
+            }
+        }
+
+        function getTodayString() {
+            const today = new Date();
+            return today.toISOString().split('T')[0];
+        }
+
+        function loadLocalStorageData() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    records = JSON.parse(stored);
+                }
+            } catch(e) {
+                console.error('Failed to parse local storage records', e);
+                records = [];
+            }
+            renderTable();
+            updateMetrics();
+        }
+
+        function saveLocalStorageData() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+            } catch(e) {
+                console.error('Failed to save to local storage', e);
+            }
+        }
+
+        function handleStatusChange(status) {
+            const amountInput = document.getElementById('recoveryAmount');
+            if (status !== 'Fully Recovered' && status !== 'Paying in Installment') {
+                if (!amountInput.value || parseFloat(amountInput.value) === 0) {
+                    amountInput.value = "0.00";
+                }
+            }
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const editIndex = parseInt(document.getElementById('editIndex').value);
+            const wardNo = document.getElementById('wardNo').value;
+            const nameRfi = document.getElementById('nameRfi').value;
+            const nameAfi = document.getElementById('nameAfi').value;
+            const accountNumber = document.getElementById('accountNumber').value.trim();
+            const recoveryAmount = parseFloat(document.getElementById('recoveryAmount').value) || 0;
+            const collectionDate = document.getElementById('collectionDate').value;
+            const status = document.getElementById('statusSelect').value;
+            const remarks = document.getElementById('remarks').value.trim();
+
+            const entryData = {
+                wardNo,
+                nameRfi,
+                nameAfi,
+                accountNumber,
+                recoveryAmount,
+                collectionDate,
+                status,
+                remarks,
+                updatedAt: new Date().toISOString()
+            };
+
+            if (editIndex >= 0 && editIndex < records.length) {
+                records[editIndex] = entryData;
+                showToast("Record updated successfully!", "success");
+            } else {
+                records.unshift(entryData);
+                showToast("New field record logged!", "success");
+            }
+
+            saveLocalStorageData();
+            renderTable();
+            updateMetrics();
+            resetForm();
+        }
+
+        function editRecord(index) {
+            const item = records[index];
+            if (!item) return;
+
+            document.getElementById('editIndex').value = index;
+            document.getElementById('wardNo').value = item.wardNo;
+            handleWardChange(item.wardNo);
+            document.getElementById('nameAfi').value = item.nameAfi;
+            document.getElementById('accountNumber').value = item.accountNumber;
+            document.getElementById('recoveryAmount').value = item.recoveryAmount;
+            document.getElementById('collectionDate').value = item.collectionDate;
+            document.getElementById('statusSelect').value = item.status;
+            document.getElementById('remarks').value = item.remarks;
+
+            document.getElementById('form-title').innerText = "Edit Field Record";
+            document.getElementById('edit-badge').classList.remove('hidden');
+            document.getElementById('btnSubmitText').innerText = "Save Changes";
+            document.getElementById('btnSubmitIcon').className = "fa-solid fa-check text-sm";
+            document.getElementById('btnSubmit').className = "flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-4 rounded-xl shadow-md shadow-amber-600/20 transition flex items-center justify-center gap-2";
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function confirmDeleteRecord(index) {
+            showConfirmationModal(
+                "Delete Field Record",
+                `Are you sure you want to delete the record for account "${records[index].accountNumber}" (Ward ${records[index].wardNo})?`,
+                function() {
+                    records.splice(index, 1);
+                    saveLocalStorageData();
+                    renderTable();
+                    updateMetrics();
+                    showToast("Record removed.", "warning");
+                }
+            );
+        }
+
+        // Select All / Bulk Delete Logic
+        function toggleSelectAll(masterCheckbox) {
+            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+            rowCheckboxes.forEach(cb => {
+                cb.checked = masterCheckbox.checked;
+            });
+            updateBulkDeleteButtonState();
+        }
+
+        function handleRowCheckboxChange() {
+            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+            const masterCheckbox = document.getElementById('selectAllCheckbox');
+            
+            const allChecked = Array.from(rowCheckboxes).every(cb => cb.checked);
+            const someChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
+
+            masterCheckbox.checked = allChecked;
+            masterCheckbox.indeterminate = someChecked && !allChecked;
+
+            updateBulkDeleteButtonState();
+        }
+
+        function updateBulkDeleteButtonState() {
+            const selectedCount = document.querySelectorAll('.row-checkbox:checked').length;
+            const btn = document.getElementById('bulkDeleteBtn');
+            const btnText = document.getElementById('bulkDeleteText');
+
+            if (selectedCount > 0) {
+                btn.removeAttribute('disabled');
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnText.innerText = `Delete (${selectedCount})`;
+            } else {
+                btn.setAttribute('disabled', 'true');
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btnText.innerText = 'Delete Selected';
+            }
+        }
+
+        function confirmBulkDelete() {
+            const selectedIndices = Array.from(document.querySelectorAll('.row-checkbox:checked'))
+                .map(cb => parseInt(cb.getAttribute('data-index')));
+
+            if (selectedIndices.length === 0) return;
+
+            showConfirmationModal(
+                "Bulk Delete Records",
+                `Are you sure you want to delete ${selectedIndices.length} selected record(s)? This action cannot be undone.`,
+                function() {
+                    selectedIndices.sort((a, b) => b - a);
+                    selectedIndices.forEach(idx => {
+                        records.splice(idx, 1);
+                    });
+
+                    document.getElementById('selectAllCheckbox').checked = false;
+                    document.getElementById('selectAllCheckbox').indeterminate = false;
+
+                    saveLocalStorageData();
+                    renderTable();
+                    updateMetrics();
+                    updateBulkDeleteButtonState();
+                    showToast(`Successfully deleted ${selectedIndices.length} record(s).`, "warning");
+                }
+            );
+        }
+
+        function clearAllRecords() {
+            if (records.length === 0) {
+                showToast("No records to clear.", "warning");
+                return;
+            }
+            showConfirmationModal(
+                "Clear All Records",
+                "Are you sure you want to clear ALL logged data from your dashboard? This will remove all records permanently.",
+                function() {
+                    records = [];
+                    document.getElementById('selectAllCheckbox').checked = false;
+                    document.getElementById('selectAllCheckbox').indeterminate = false;
+                    saveLocalStorageData();
+                    renderTable();
+                    updateMetrics();
+                    updateBulkDeleteButtonState();
+                    showToast("All records cleared.", "warning");
+                }
+            );
+        }
+
+        function resetForm() {
+            document.getElementById('recordForm').reset();
+            document.getElementById('editIndex').value = "-1";
+            document.getElementById('collectionDate').value = getTodayString();
+            document.getElementById('nameRfi').value = "";
+            document.getElementById('nameAfi').innerHTML = '<option value="">Select AFI...</option>';
+
+            document.getElementById('form-title').innerText = "Entry Logging Form";
+            document.getElementById('edit-badge').classList.add('hidden');
+            document.getElementById('btnSubmitText').innerText = "Add Record";
+            document.getElementById('btnSubmitIcon').className = "fa-solid fa-plus text-sm";
+            document.getElementById('btnSubmit').className = "flex-1 bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-4 rounded-xl shadow-md shadow-sky-600/20 transition flex items-center justify-center gap-2";
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('logTableBody');
+            const emptyState = document.getElementById('emptyState');
+            const badgeCount = document.getElementById('badge-count');
+
+            badgeCount.innerText = records.length;
+
+            if (records.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            tbody.innerHTML = records.map((rec, index) => {
+                const statusBadgeStyle = getStatusStyle(rec.status);
+                const formattedAmount = 'Rs ' + parseFloat(rec.recoveryAmount || 0).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                
+                return `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-3 text-center">
+                            <input type="checkbox" data-index="${index}" onclick="handleRowCheckboxChange()" class="row-checkbox rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4 cursor-pointer">
+                        </td>
+                        <td class="py-3 px-3 font-bold text-sky-700">Ward ${escapeHtml(rec.wardNo)}</td>
+                        <td class="py-3 px-3 text-slate-800 text-xs font-medium">${escapeHtml(rec.nameRfi)}</td>
+                        <td class="py-3 px-3 text-slate-600 text-xs">${escapeHtml(rec.nameAfi)}</td>
+                        <td class="py-3 px-3 font-semibold text-slate-900">${escapeHtml(rec.accountNumber)}</td>
+                        <td class="py-3 px-3 text-slate-600 text-xs">${escapeHtml(rec.collectionDate)}</td>
+                        <td class="py-3 px-3 font-semibold text-emerald-600">${formattedAmount}</td>
+                        <td class="py-3 px-3">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadgeStyle}">
+                                ${escapeHtml(rec.status)}
+                            </span>
+                        </td>
+                        <td class="py-3 px-3 text-right space-x-1">
+                            <button onclick="editRecord(${index})" title="Edit Record" class="p-1.5 bg-sky-50 text-sky-600 hover:bg-sky-100 rounded-lg transition">
+                                <i class="fa-regular fa-pen-to-square text-xs"></i>
+                            </button>
+                            <button onclick="confirmDeleteRecord(${index})" title="Delete Record" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition">
+                                <i class="fa-regular fa-trash-can text-xs"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function getStatusStyle(status) {
+            switch(status) {
+                case 'Fully Recovered':
+                    return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+                case 'Paying in Installment':
+                    return 'bg-blue-50 text-blue-700 border border-blue-200';
+                case 'Disconnection on Arrears':
+                    return 'bg-rose-50 text-rose-700 border border-rose-200';
+                case 'File Status':
+                    return 'bg-purple-50 text-purple-700 border border-purple-200';
+                case 'Application by Consumer':
+                    return 'bg-amber-50 text-amber-700 border border-amber-200';
+                case 'Property Locked':
+                    return 'bg-slate-100 text-slate-700 border border-slate-200';
+                default:
+                    return 'bg-slate-100 text-slate-700 border border-slate-200';
+            }
+        }
+
+        function updateMetrics() {
+            const totalCount = records.length;
+            const totalAmount = records.reduce((sum, r) => sum + (parseFloat(r.recoveryAmount) || 0), 0);
+            const pendingCount = records.filter(r => r.status !== 'Fully Recovered').length;
+
+            document.getElementById('stat-total-count').innerText = totalCount;
+            document.getElementById('stat-total-amount').innerText = 'Rs ' + totalAmount.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('stat-pending-count').innerText = pendingCount;
+        }
+
+        function exportExcel() {
+            if (records.length === 0) {
+                showToast("No data available to export.", "warning");
+                return;
+            }
+
+            const exportData = records.map(r => ({
+                "Ward No": r.wardNo,
+                "RFI Name": r.nameRfi,
+                "AFI Name": r.nameAfi,
+                "Account ID": r.accountNumber,
+                "Collection Date": r.collectionDate,
+                "Recovery Amount (Rs)": r.recoveryAmount,
+                "Status": r.status,
+                "Remarks": r.remarks,
+                "Last Updated": r.updatedAt
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Field Log");
+            XLSX.writeFile(workbook, `Field_Supervisor_Log_${getTodayString()}.xlsx`);
+            showToast("Excel file downloaded successfully!", "success");
+        }
+
+        function exportCSV() {
+            if (records.length === 0) {
+                showToast("No data available to export.", "warning");
+                return;
+            }
+
+            const exportData = records.map(r => ({
+                "Ward No": r.wardNo,
+                "RFI Name": r.nameRfi,
+                "AFI Name": r.nameAfi,
+                "Account ID": r.accountNumber,
+                "Collection Date": r.collectionDate,
+                "Recovery Amount (Rs)": r.recoveryAmount,
+                "Status": r.status,
+                "Remarks": r.remarks
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
+            const blob = new Blob([csvOutput], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Field_Supervisor_Log_${getTodayString()}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("CSV file exported successfully!", "success");
+        }
+
+        function copyToClipboard() {
+            if (records.length === 0) {
+                showToast("No data available to copy.", "warning");
+                return;
+            }
+
+            const headers = ["Ward No", "RFI Name", "AFI Name", "Account ID", "Collection Date", "Recovery Amount (Rs)", "Status", "Remarks"];
+            const rows = records.map(r => [
+                r.wardNo,
+                r.nameRfi,
+                r.nameAfi,
+                r.accountNumber,
+                r.collectionDate,
+                r.recoveryAmount,
+                r.status,
+                r.remarks
+            ]);
+
+            const tsvContent = [headers.join("\t"), ...rows.map(e => e.join("\t"))].join("\n");
+
+            navigator.clipboard.writeText(tsvContent).then(() => {
+                showToast("Copied to clipboard! Ready to paste into Excel.", "success");
+            }).catch(err => {
+                console.error('Clipboard copy failed', err);
+                showToast("Failed to copy data.", "warning");
+            });
+        }
+
+        function showConfirmationModal(title, message, onConfirm) {
+            const container = document.getElementById('modal-container');
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+
+            container.classList.remove('hidden');
+            setTimeout(() => container.classList.remove('opacity-0'), 10);
+
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            const cancelBtn = document.getElementById('modal-cancel-btn');
+
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+            newConfirmBtn.addEventListener('click', () => {
+                closeModal();
+                onConfirm();
+            });
+
+            newCancelBtn.addEventListener('click', closeModal);
+            container.addEventListener('click', (e) => {
+                if (e.target === container) closeModal();
+            }, { once: true });
+        }
+
+        function closeModal() {
+            const container = document.getElementById('modal-container');
+            container.classList.add('opacity-0');
+            setTimeout(() => container.classList.add('hidden'), 200);
+        }
+
+        function showToast(message, type = "success") {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMessage.innerText = message;
+
+            if (type === "success") {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-xl";
+            } else if (type === "warning") {
+                toastIcon.className = "fa-solid fa-triangle-exclamation text-amber-400 text-xl";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>
