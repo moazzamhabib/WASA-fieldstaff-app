@@ -347,11 +347,29 @@
                 </div>
             </div>
 
+            <!-- Filter Controls Bar (Wardwise & Datewise Filter requested) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Filter by Ward</label>
+                    <select id="filterWard" onchange="applyFilters()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <option value="">All Wards</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Filter by Collection Date</label>
+                    <input type="date" id="filterDate" onchange="applyFilters()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+            </div>
+
             <!-- Table Container -->
             <div class="overflow-x-auto custom-scrollbar flex-1 -mx-5 sm:mx-0">
                 <table class="w-full text-left text-sm border-collapse min-w-[700px]">
                     <thead>
                         <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            <th class="py-3 px-3 w-10 text-center">
+                                <!-- Select All Checkbox requested -->
+                                <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)" title="Select All Entries" class="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4 cursor-pointer">
+                            </th>
                             <th class="py-3 px-3">Ward</th>
                             <th class="py-3 px-3">RFI</th>
                             <th class="py-3 px-3">AFI</th>
@@ -372,7 +390,7 @@
                     <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 inline-flex items-center justify-center text-2xl">
                         <i class="fa-regular fa-folder-open"></i>
                     </div>
-                    <p class="text-sm font-medium text-slate-500">No data collected yet</p>
+                    <p class="text-sm font-medium text-slate-500">No data collected yet or matching filter</p>
                     <p class="text-xs text-slate-400 max-w-xs mx-auto">Select a Ward, RFI, and AFI combination to start logging your field collections.</p>
                 </div>
             </div>
@@ -532,7 +550,7 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const swCode = `
-                    const CACHE_NAME = 'field-supervisor-v2';
+                    const CACHE_NAME = 'field-supervisor-v3';
                     self.addEventListener('install', (e) => {
                         e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(['./'])));
                     });
@@ -605,7 +623,7 @@
             { ward: "247", subDiv: "Tajpura S/D", rfi: "Muhammad Rehan", afi: "Zubair Ali" }
         ];
 
-        // Dedicated Single Password per RFI Name (Easy to manage across all their wards)
+        // Dedicated Single Password per RFI Name
         const rfiPasswords = {
             "Muhammad Naeem": "naeem123",
             "Kashif Nasir": "kashif123",
@@ -616,23 +634,29 @@
 
         // State Management
         let records = [];
-        const STORAGE_KEY = 'field_supervisor_pwa_records_v2';
+        const STORAGE_KEY = 'field_supervisor_pwa_records_v3';
         let pendingActionCallback = null;
 
         // Initial Load setup
         window.onload = function() {
-            populateWardDropdown();
+            populateWardDropdowns();
             document.getElementById('collectionDate').value = getTodayString();
             loadLocalStorageData();
             handleStatusChange(document.getElementById('statusSelect').value);
         };
 
-        function populateWardDropdown() {
+        function populateWardDropdowns() {
             const wardSelect = document.getElementById('wardNo');
+            const filterWardSelect = document.getElementById('filterWard');
             const uniqueWards = [...new Set(wardMappingData.map(item => item.ward))].sort((a,b) => parseInt(a) - parseInt(b));
             
-            wardSelect.innerHTML = '<option value="">Select Ward...</option>' + 
+            const optionsHtml = '<option value="">Select Ward...</option>' + 
                 uniqueWards.map(w => `<option value="${w}">Ward No ${w}</option>`).join('');
+            wardSelect.innerHTML = optionsHtml;
+
+            const filterOptionsHtml = '<option value="">All Wards</option>' + 
+                uniqueWards.map(w => `<option value="${w}">Ward No ${w}</option>`).join('');
+            filterWardSelect.innerHTML = filterOptionsHtml;
         }
 
         function handleWardChange(selectedWard) {
@@ -728,22 +752,49 @@
             renderSummaries();
         }
 
+        function getFilteredRecords() {
+            const wardFilter = document.getElementById('filterWard').value;
+            const dateFilter = document.getElementById('filterDate').value;
+
+            return records.map((r, originalIndex) => ({ ...r, originalIndex })).filter(r => {
+                let matchWard = !wardFilter || r.wardNo === wardFilter;
+                let matchDate = !dateFilter || r.collectionDate === dateFilter;
+                return matchWard && matchDate;
+            });
+        }
+
+        function applyFilters() {
+            renderTable();
+        }
+
+        function toggleSelectAll(masterCheckbox) {
+            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+            rowCheckboxes.forEach(cb => {
+                cb.checked = masterCheckbox.checked;
+            });
+        }
+
         function renderTable() {
             const tbody = document.getElementById('logTableBody');
             const emptyState = document.getElementById('emptyState');
             const badgeCount = document.getElementById('badge-count');
+            const filtered = getFilteredRecords();
 
             badgeCount.innerText = records.length;
+            document.getElementById('selectAllCheckbox').checked = false;
 
-            if (records.length === 0) {
+            if (filtered.length === 0) {
                 tbody.innerHTML = '';
                 emptyState.classList.remove('hidden');
                 return;
             }
 
             emptyState.classList.add('hidden');
-            tbody.innerHTML = records.map((r, index) => `
+            tbody.innerHTML = filtered.map((r) => `
                 <tr class="hover:bg-slate-50/80 transition">
+                    <td class="py-3 px-3 text-center">
+                        <input type="checkbox" data-index="${r.originalIndex}" class="row-checkbox rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4 cursor-pointer">
+                    </td>
                     <td class="py-3 px-3 font-semibold text-slate-900">Ward ${r.wardNo}</td>
                     <td class="py-3 px-3 text-slate-600">${r.nameRfi}</td>
                     <td class="py-3 px-3 text-slate-600">${r.nameAfi}</td>
@@ -756,10 +807,10 @@
                         </span>
                     </td>
                     <td class="py-3 px-3 text-right space-x-1">
-                        <button onclick="promptEditRecord(${index})" class="p-1.5 bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 rounded-lg transition" title="Edit Entry">
+                        <button onclick="promptEditRecord(${r.originalIndex})" class="p-1.5 bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 rounded-lg transition" title="Edit Entry">
                             <i class="fa-regular fa-pen-to-square"></i>
                         </button>
-                        <button onclick="promptDeleteRecord(${index})" class="p-1.5 bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-600 rounded-lg transition" title="Delete Entry">
+                        <button onclick="promptDeleteRecord(${r.originalIndex})" class="p-1.5 bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-600 rounded-lg transition" title="Delete Entry">
                             <i class="fa-regular fa-trash-can"></i>
                         </button>
                     </td>
@@ -940,7 +991,7 @@
             currentAuthRfi = rfiName;
             pendingActionCallback = callback;
 
-            document.getElementById('rfiAuthSub').innerText = `Required Password for RFI: ${rfiName}`;
+            document.getElementById('rfiAuthSub').innerText = `Required Password for RFI (${rfiName}):`;
             document.getElementById('rfiInputPassword').value = "";
             document.getElementById('rfiAuthError').classList.add('hidden');
 
