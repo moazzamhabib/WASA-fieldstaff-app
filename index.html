@@ -17,28 +17,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- SheetJS (xlsx) for native Excel file generation -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    
-    <!-- PWA Web Manifest (Inline Data URI) -->
-    <link rel="manifest" href='data:application/manifest+json,{
-        "name": "Field Supervisor Assistant",
-        "short_name": "FieldAssist",
-        "start_url": "./",
-        "display": "standalone",
-        "background_color": "#f1f5f9",
-        "theme_color": "#0284c7",
-        "icons": [
-            {
-                "src": "https://placehold.co/192x192/0284c7/ffffff?text=FSA",
-                "sizes": "192x192",
-                "type": "image/png"
-            },
-            {
-                "src": "https://placehold.co/512x512/0284c7/ffffff?text=FSA",
-                "sizes": "512x512",
-                "type": "image/png"
-            }
-        ]
-    }'>
 
     <script>
         tailwind.config = {
@@ -71,7 +49,7 @@
 </head>
 <body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen flex flex-col justify-between selection:bg-sky-500 selection:text-white">
 
-    <!-- Native Admin Username & Password Login Gate -->
+    <!-- Master Admin Login Gate -->
     <div id="authGate" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl border border-slate-100 space-y-6">
             <div class="text-center space-y-2">
@@ -118,7 +96,7 @@
         </div>
     </div>
 
-    <!-- RFI Password Verification Modal for Edit/Delete -->
+    <!-- RFI Password Verification Modal -->
     <div id="rfiAuthModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
         <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <div class="flex items-center space-x-3 text-sky-600">
@@ -152,7 +130,7 @@
         </div>
     </div>
 
-    <!-- Toast Notification Banner -->
+    <!-- Toast Banner -->
     <div id="toast" class="fixed top-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 max-w-sm w-full bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center space-x-3">
         <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-xl"></i>
         <div class="flex-1 text-sm font-medium" id="toast-message">Action completed successfully</div>
@@ -172,12 +150,6 @@
             </div>
             
             <div class="flex items-center gap-2">
-                <!-- Install PWA Button -->
-                <button id="installAppBtn" onclick="installPWA()" class="hidden bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs px-3 py-2 rounded-xl transition items-center gap-1.5 shadow-sm animate-pulse">
-                    <i class="fa-solid fa-download"></i>
-                    <span>Install App</span>
-                </button>
-
                 <button onclick="exportExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm">
                     <i class="fa-solid fa-file-excel"></i>
                     <span class="hidden sm:inline">Excel</span>
@@ -227,28 +199,28 @@
                         </select>
                     </div>
 
-                    <!-- Auto-populated Sub Division -->
+                    <!-- Auto Sub Division -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Sub Division (Auto)</label>
                         <input type="text" id="subDivision" readonly placeholder="Auto-populated from Ward"
                             class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-600 cursor-not-allowed">
                     </div>
 
-                    <!-- Auto-populated RFI Name -->
+                    <!-- Auto RFI Name -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Name of RFI's (Auto)</label>
                         <input type="text" id="nameRfi" readonly placeholder="Auto-populated from Ward"
                             class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-600 cursor-not-allowed">
                     </div>
 
-                    <!-- Auto-populated AFI Name -->
+                    <!-- Auto AFI Name -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Name of AFI's (Auto)</label>
                         <input type="text" id="nameAfi" readonly placeholder="Auto-populated from Ward"
                             class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-600 cursor-not-allowed">
                     </div>
 
-                    <!-- Account ID / Number -->
+                    <!-- Account ID -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Account ID / Number *</label>
                         <input type="text" id="accountNumber" required placeholder="e.g. ACC-849201"
@@ -308,269 +280,189 @@
             </div>
         </div>
 
-        <!-- Right Column: Data Log Table & Export tools -->
-        <div class="lg:col-span-7 flex flex-col bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
+        <!-- Right Column: Table & Filters -->
+        <div class="lg:col-span-7 flex flex-col space-y-6">
             
-            <!-- Table Header & Action Tools -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
-                <div>
-                    <h2 class="font-bold text-slate-900 text-lg flex items-center gap-2">
-                        <span>Field Log Entries</span>
-                        <span id="badge-count" class="text-xs bg-slate-100 text-slate-600 font-medium px-2.5 py-0.5 rounded-full border border-slate-200">0</span>
-                    </h2>
-                </div>
-
-                <!-- Export and Copy Actions -->
-                <div class="flex items-center gap-2 flex-wrap">
-                    <button onclick="exportExcel()" 
-                        class="flex-1 sm:flex-none px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 active:scale-95">
-                        <i class="fa-solid fa-file-excel"></i>
-                        <span>Download Excel</span>
-                    </button>
-
-                    <button onclick="copyToClipboard()" 
-                        class="flex-1 sm:flex-none px-3.5 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 font-medium text-xs rounded-xl border border-sky-200 transition flex items-center justify-center gap-1.5 active:scale-95">
-                        <i class="fa-regular fa-copy"></i>
-                        <span>Copy for Excel</span>
-                    </button>
-
-                    <button onclick="exportCSV()" 
-                        class="flex-1 sm:flex-none px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs rounded-xl border border-slate-200 transition flex items-center justify-center gap-1.5 active:scale-95">
-                        <i class="fa-solid fa-file-csv text-slate-600"></i>
-                        <span>Export CSV</span>
-                    </button>
-
-                    <button onclick="clearAllRecords()" title="Clear All Logged Data" 
-                        class="p-2 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl border border-slate-200 hover:border-rose-200 transition">
-                        <i class="fa-regular fa-trash-can"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Table Container -->
-            <div class="overflow-x-auto custom-scrollbar flex-1 -mx-5 sm:mx-0">
-                <table class="w-full text-left text-sm border-collapse min-w-[700px]">
-                    <thead>
-                        <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                            <th class="py-3 px-3">Ward</th>
-                            <th class="py-3 px-3">RFI</th>
-                            <th class="py-3 px-3">AFI</th>
-                            <th class="py-3 px-3">Account ID</th>
-                            <th class="py-3 px-3">Date</th>
-                            <th class="py-3 px-3">Amount</th>
-                            <th class="py-3 px-3">Status</th>
-                            <th class="py-3 px-3 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logTableBody" class="divide-y divide-slate-100">
-                        <!-- Dynamic Content Rendered Here -->
-                    </tbody>
-                </table>
-
-                <!-- Empty State Graphic -->
-                <div id="emptyState" class="py-16 text-center space-y-3">
-                    <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 inline-flex items-center justify-center text-2xl">
-                        <i class="fa-regular fa-folder-open"></i>
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 flex flex-col">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
+                    <div>
+                        <h2 class="font-bold text-slate-900 text-lg flex items-center gap-2">
+                            <span>Field Log Entries</span>
+                            <span id="badge-count" class="text-xs bg-slate-100 text-slate-600 font-medium px-2.5 py-0.5 rounded-full border border-slate-200">0</span>
+                        </h2>
                     </div>
-                    <p class="text-sm font-medium text-slate-500">No data collected yet</p>
-                    <p class="text-xs text-slate-400 max-w-xs mx-auto">Select a Ward, RFI, and AFI combination to start logging your field collections.</p>
+
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="exportExcel()" 
+                            class="flex-1 sm:flex-none px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 active:scale-95">
+                            <i class="fa-solid fa-file-excel"></i>
+                            <span>Download Excel</span>
+                        </button>
+
+                        <button onclick="copyToClipboard()" 
+                            class="flex-1 sm:flex-none px-3.5 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 font-medium text-xs rounded-xl border border-sky-200 transition flex items-center justify-center gap-1.5 active:scale-95">
+                            <i class="fa-regular fa-copy"></i>
+                            <span>Copy for Excel</span>
+                        </button>
+
+                        <button onclick="exportCSV()" 
+                            class="flex-1 sm:flex-none px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs rounded-xl border border-slate-200 transition flex items-center justify-center gap-1.5 active:scale-95">
+                            <i class="fa-solid fa-file-csv text-slate-600"></i>
+                            <span>Export CSV</span>
+                        </button>
+
+                        <button onclick="clearAllRecords()" title="Clear All Logged Data" 
+                            class="p-2 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl border border-slate-200 hover:border-rose-200 transition">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Filter by Ward</label>
+                        <select id="filterWard" onchange="applyFilters()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <option value="">All Wards</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Filter by Collection Date</label>
+                        <input type="date" id="filterDate" onchange="applyFilters()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto custom-scrollbar flex-1 -mx-5 sm:mx-0">
+                    <table class="w-full text-left text-sm border-collapse min-w-[700px]">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3 px-3 w-10 text-center">
+                                    <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)" title="Select All Entries" class="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4 cursor-pointer">
+                                </th>
+                                <th class="py-3 px-3">Ward</th>
+                                <th class="py-3 px-3">RFI</th>
+                                <th class="py-3 px-3">AFI</th>
+                                <th class="py-3 px-3">Account ID</th>
+                                <th class="py-3 px-3">Date</th>
+                                <th class="py-3 px-3">Amount</th>
+                                <th class="py-3 px-3">Status</th>
+                                <th class="py-3 px-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logTableBody" class="divide-y divide-slate-100">
+                        </tbody>
+                    </table>
+
+                    <div id="emptyState" class="py-16 text-center space-y-3">
+                        <div class="w-16 h-16 rounded-full bg-slate-100 text-slate-400 inline-flex items-center justify-center text-2xl">
+                            <i class="fa-regular fa-folder-open"></i>
+                        </div>
+                        <p class="text-sm font-medium text-slate-500">No data collected yet or matching filter</p>
+                        <p class="text-xs text-slate-400 max-w-xs mx-auto">Select a Ward, RFI, and AFI combination to start logging your field collections.</p>
+                    </div>
                 </div>
             </div>
+
+            <!-- Real-Time Analytical Summaries Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Ward Wise Summary Card -->
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 flex flex-col">
+                    <h3 class="font-bold text-slate-900 text-sm mb-3 flex items-center justify-between">
+                        <span><i class="fa-solid fa-map-location-dot text-sky-600 mr-2"></i> Ward-wise Summary</span>
+                        <span id="ward-summary-count" class="text-[10px] bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-semibold">0 Wards</span>
+                    </h3>
+                    <div class="overflow-x-auto custom-scrollbar max-h-56">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-400 uppercase font-semibold border-b border-slate-100">
+                                    <th class="py-2 px-2.5">Ward</th>
+                                    <th class="py-2 px-2.5 text-center">Entries</th>
+                                    <th class="py-2 px-2.5 text-right">Total Recovered</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wardSummaryBody" class="divide-y divide-slate-100 text-slate-700">
+                                <tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- RFI Wise Summary Card -->
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 flex flex-col">
+                    <h3 class="font-bold text-slate-900 text-sm mb-3 flex items-center justify-between">
+                        <span><i class="fa-solid fa-user-tie text-emerald-600 mr-2"></i> RFI-wise Summary</span>
+                        <span id="rfi-summary-count" class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">0 RFIs</span>
+                    </h3>
+                    <div class="overflow-x-auto custom-scrollbar max-h-56">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-400 uppercase font-semibold border-b border-slate-100">
+                                    <th class="py-2 px-2.5">RFI Name</th>
+                                    <th class="py-2 px-2.5 text-center">Entries</th>
+                                    <th class="py-2 px-2.5 text-right">Total Recovered</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rfiSummaryBody" class="divide-y divide-slate-100 text-slate-700">
+                                <tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- AFI Wise Summary Card -->
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 flex flex-col">
+                    <h3 class="font-bold text-slate-900 text-sm mb-3 flex items-center justify-between">
+                        <span><i class="fa-solid fa-users-gear text-indigo-600 mr-2"></i> AFI-wise Summary</span>
+                        <span id="afi-summary-count" class="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-semibold">0 AFIs</span>
+                    </h3>
+                    <div class="overflow-x-auto custom-scrollbar max-h-56">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-400 uppercase font-semibold border-b border-slate-100">
+                                    <th class="py-2 px-2.5">AFI Name</th>
+                                    <th class="py-2 px-2.5 text-center">Entries</th>
+                                    <th class="py-2 px-2.5 text-right">Total Recovered</th>
+                                </tr>
+                            </thead>
+                            <tbody id="afiSummaryBody" class="divide-y divide-slate-100 text-slate-700">
+                                <tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Date Wise Summary Card -->
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 flex flex-col">
+                    <h3 class="font-bold text-slate-900 text-sm mb-3 flex items-center justify-between">
+                        <span><i class="fa-regular fa-calendar-days text-amber-600 mr-2"></i> Date-wise Collection Summary</span>
+                        <span id="date-summary-count" class="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">0 Days</span>
+                    </h3>
+                    <div class="overflow-x-auto custom-scrollbar max-h-56">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-400 uppercase font-semibold border-b border-slate-100">
+                                    <th class="py-2 px-2.5">Date</th>
+                                    <th class="py-2 px-2.5 text-center">Entries</th>
+                                    <th class="py-2 px-2.5 text-right">Total Recovered</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dateSummaryBody" class="divide-y divide-slate-100 text-slate-700">
+                                <tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </main>
 
-    <!-- Automatic Real-Time Ward / RFI / AFI Summaries -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 w-full space-y-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="font-bold text-slate-900 text-xl">Real-Time Recovery Summaries</h2>
-                <p class="text-xs text-slate-500 mt-1">Automatically computed per Ward, RFI, and AFI from logged field entries</p>
-            </div>
-            <span class="text-xs font-medium text-sky-700 bg-sky-50 border border-sky-100 rounded-full px-3 py-1">Live updates</span>
-        </div>
-
-        <!-- Ward-wise Summary -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                <div>
-                    <h3 class="font-bold text-slate-800 text-sm sm:text-base">Ward-wise Recovery Summary</h3>
-                    <p class="text-xs text-slate-500">Ward breakdown with total entries, accounts, recovered amounts, and action statuses</p>
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs sm:text-sm min-w-[750px]">
-                    <thead class="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
-                        <tr>
-                            <th class="p-3">Ward No.</th>
-                            <th class="p-3">Sub Division</th>
-                            <th class="p-3 text-center">Entries</th>
-                            <th class="p-3 text-center">Unique Accounts</th>
-                            <th class="p-3 text-center">Full Recovered</th>
-                            <th class="p-3 text-center">Installments / Pending</th>
-                            <th class="p-3 text-right">Total Recovered</th>
-                        </tr>
-                    </thead>
-                    <tbody id="wardSummaryBody" class="divide-y divide-slate-100">
-                        <tr><td colspan="7" class="p-4 text-center text-slate-400">No records logged yet</td></tr>
-                    </tbody>
-                    <tfoot id="wardSummaryFoot" class="bg-slate-100 font-bold text-slate-900"></tfoot>
-                </table>
-            </div>
-        </div>
-
-        <!-- RFI-wise Summary -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                <div>
-                    <h3 class="font-bold text-slate-800 text-sm sm:text-base">RFI-wise Recovery Summary</h3>
-                    <p class="text-xs text-slate-500">RFI aggregate performance across assigned Wards and field staff</p>
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs sm:text-sm min-w-[750px]">
-                    <thead class="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
-                        <tr>
-                            <th class="p-3">RFI Name</th>
-                            <th class="p-3 text-center">Assigned Wards</th>
-                            <th class="p-3 text-center">Total Logged</th>
-                            <th class="p-3 text-center">Unique Accounts</th>
-                            <th class="p-3 text-center">Full Recovered</th>
-                            <th class="p-3 text-center">Pending Action</th>
-                            <th class="p-3 text-right">Total Recovered</th>
-                        </tr>
-                    </thead>
-                    <tbody id="rfiSummaryBody" class="divide-y divide-slate-100">
-                        <tr><td colspan="7" class="p-4 text-center text-slate-400">No records logged yet</td></tr>
-                    </tbody>
-                    <tfoot id="rfiSummaryFoot" class="bg-slate-100 font-bold text-slate-900"></tfoot>
-                </table>
-            </div>
-        </div>
-
-        <!-- AFI-wise Summary -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                <div>
-                    <h3 class="font-bold text-slate-800 text-sm sm:text-base">AFI-wise Recovery Summary</h3>
-                    <p class="text-xs text-slate-500">AFI performance breakdown by assigned Ward and collection metrics</p>
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs sm:text-sm min-w-[750px]">
-                    <thead class="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
-                        <tr>
-                            <th class="p-3">AFI Name (With Helpers)</th>
-                            <th class="p-3">Ward No.</th>
-                            <th class="p-3 text-center">Total Logged</th>
-                            <th class="p-3 text-center">Unique Accounts</th>
-                            <th class="p-3 text-center">Full Recovered</th>
-                            <th class="p-3 text-center">Pending / Warnings</th>
-                            <th class="p-3 text-right">Total Recovered</th>
-                        </tr>
-                    </thead>
-                    <tbody id="afiSummaryBody" class="divide-y divide-slate-100">
-                        <tr><td colspan="7" class="p-4 text-center text-slate-400">No records logged yet</td></tr>
-                    </tbody>
-                    <tfoot id="afiSummaryFoot" class="bg-slate-100 font-bold text-slate-900"></tfoot>
-                </table>
-            </div>
-        </div>
-    </section>
-
-    <!-- Custom Modal Container for Action Confirmations -->
-    <div id="modal-container" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
-            <div class="flex items-center space-x-3 text-rose-600">
-                <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
-                <h3 id="modal-title" class="font-bold text-slate-900 text-lg">Confirm Action</h3>
-            </div>
-            <p id="modal-message" class="text-slate-600 text-sm">Are you sure you want to perform this action?</p>
-            <div class="flex justify-end space-x-3 pt-2">
-                <button id="modal-cancel-btn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl transition">
-                    Cancel
-                </button>
-                <button id="modal-confirm-btn" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-xl transition shadow-md shadow-rose-600/20">
-                    Confirm
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- JavaScript PWA and Logic -->
+    <!-- JavaScript Logic -->
     <script>
-        // --- Master Authentication Credentials ---
         const ADMIN_USER = "admin";
         const ADMIN_PASS = "secure123";
 
-        function handleAuthLogin(e) {
-            e.preventDefault();
-            const userBox = document.getElementById('authUsername').value.trim();
-            const passBox = document.getElementById('authPassword').value;
-            const errorBanner = document.getElementById('authError');
-            const authGate = document.getElementById('authGate');
-
-            if (userBox === ADMIN_USER && passBox === ADMIN_PASS) {
-                authGate.classList.add('opacity-0', 'transition-opacity', 'duration-300');
-                setTimeout(() => {
-                    authGate.style.display = 'none';
-                }, 300);
-                sessionStorage.setItem('fsa_authenticated', 'true');
-            } else {
-                errorBanner.classList.remove('hidden');
-                document.getElementById('authPassword').value = '';
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            if (sessionStorage.getItem('fsa_authenticated') === 'true') {
-                const authGate = document.getElementById('authGate');
-                if (authGate) authGate.style.display = 'none';
-            }
-        });
-
-        // Register Service Worker for offline capability
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                const swCode = `
-                    const CACHE_NAME = 'field-supervisor-v2';
-                    self.addEventListener('install', (e) => {
-                        e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(['./'])));
-                    });
-                    self.addEventListener('fetch', (e) => {
-                        e.respondWith(caches.match(e.request).then((res) => res || fetch(e.request)));
-                    });
-                `;
-                const blob = new Blob([swCode], { type: 'text/javascript' });
-                const swUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed', err));
-            });
-        }
-
-        // Deferred prompt for PWA installation
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('installAppBtn').classList.remove('hidden');
-            document.getElementById('installAppBtn').classList.add('flex');
-        });
-
-        function installPWA() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        showToast("App installed successfully!", "success");
-                    }
-                    deferredPrompt = null;
-                    document.getElementById('installAppBtn').classList.add('hidden');
-                });
-            } else {
-                showToast("App is already installed or direct installation isn't supported by browser.", "warning");
-            }
-        }
-
-        // Official Ward, RFI, Sub-Division, AFI mapping dataset
         const wardMappingData = [
             { ward: "2", subDiv: "Fatehgarh S/D", rfi: "Muhammad Naeem", afi: "Muhammad Awais (Ali Siddique)" },
             { ward: "10", subDiv: "Fatehgarh S/D", rfi: "Muhammad Naeem", afi: "Abid Hussain" },
@@ -605,72 +497,72 @@
             { ward: "247", subDiv: "Tajpura S/D", rfi: "Muhammad Rehan", afi: "Zubair Ali" }
         ];
 
-        // Dedicated Single Password per RFI Name (Easy to manage across all their wards)
         const rfiPasswords = {
             "Muhammad Naeem": "naeem123",
             "Kashif Nasir": "kashif123",
-            "Aon Shah": "aon123",
+            "Aon Shah": "pakistan",
             "Muhammad Sajid": "sajid123",
             "Muhammad Rehan": "rehan123"
         };
 
-        // State Management
+        // Standard, Single Unified LocalStorage Key
+        const STORAGE_KEY = 'field_supervisor_pwa_records_v1';
         let records = [];
-        const STORAGE_KEY = 'field_supervisor_pwa_records_v2';
-        let pendingActionCallback = null;
+        
+        // Modal State Variables
+        let pendingRecordIndex = -1;
+        let pendingActionType = ""; // "edit" or "delete"
 
-        // Initial Load setup
         window.onload = function() {
-            populateWardDropdown();
+            populateWardDropdowns();
             document.getElementById('collectionDate').value = getTodayString();
             loadLocalStorageData();
-            handleStatusChange(document.getElementById('statusSelect').value);
         };
 
-        function populateWardDropdown() {
+        function handleAuthLogin(e) {
+            e.preventDefault();
+            const userBox = document.getElementById('authUsername').value.trim();
+            const passBox = document.getElementById('authPassword').value;
+
+            if (userBox === ADMIN_USER && passBox === ADMIN_PASS) {
+                document.getElementById('authGate').style.display = 'none';
+                sessionStorage.setItem('fsa_authenticated', 'true');
+            } else {
+                document.getElementById('authError').classList.remove('hidden');
+            }
+        }
+
+        if (sessionStorage.getItem('fsa_authenticated') === 'true') {
+            window.addEventListener('DOMContentLoaded', () => {
+                const gate = document.getElementById('authGate');
+                if (gate) gate.style.display = 'none';
+            });
+        }
+
+        function populateWardDropdowns() {
             const wardSelect = document.getElementById('wardNo');
+            const filterWardSelect = document.getElementById('filterWard');
             const uniqueWards = [...new Set(wardMappingData.map(item => item.ward))].sort((a,b) => parseInt(a) - parseInt(b));
             
-            wardSelect.innerHTML = '<option value="">Select Ward...</option>' + 
-                uniqueWards.map(w => `<option value="${w}">Ward No ${w}</option>`).join('');
+            wardSelect.innerHTML = '<option value="">Select Ward...</option>' + uniqueWards.map(w => `<option value="${w}">Ward No ${w}</option>`).join('');
+            filterWardSelect.innerHTML = '<option value="">All Wards</option>' + uniqueWards.map(w => `<option value="${w}">Ward No ${w}</option>`).join('');
         }
 
         function handleWardChange(selectedWard) {
-            const subDivInput = document.getElementById('subDivision');
-            const rfiInput = document.getElementById('nameRfi');
-            const afiInput = document.getElementById('nameAfi');
-
-            if (!selectedWard) {
-                subDivInput.value = "";
-                rfiInput.value = "";
-                afiInput.value = "";
-                return;
-            }
-
-            const matchingRows = wardMappingData.filter(item => item.ward === selectedWard);
-            
-            if (matchingRows.length > 0) {
-                subDivInput.value = matchingRows[0].subDiv;
-                rfiInput.value = matchingRows[0].rfi;
-                afiInput.value = matchingRows[0].afi;
-            }
+            const row = wardMappingData.find(item => item.ward === selectedWard);
+            document.getElementById('subDivision').value = row ? row.subDiv : "";
+            document.getElementById('nameRfi').value = row ? row.rfi : "";
+            document.getElementById('nameAfi').value = row ? row.afi : "";
         }
 
         function handleStatusChange(status) {
-            const amountInput = document.getElementById('recoveryAmount');
-            if (status === 'Disconnected / Not Paying' || status === 'Notice / Filed Status' || status === 'Warning ⚠️ to Pay Bill' || status === 'Sewerage Block') {
-                amountInput.value = '0';
+            if (['Disconnected / Not Paying', 'Notice / Filed Status', 'Warning ⚠️ to Pay Bill', 'Sewerage Block'].includes(status)) {
+                document.getElementById('recoveryAmount').value = '0';
             }
         }
 
         function getTodayString() {
-            const d = new Date();
-            let month = '' + (d.getMonth() + 1),
-                day = '' + d.getDate(),
-                year = d.getFullYear();
-            if (month.length < 2) month = '0' + month;
-            if (day.length < 2) day = '0' + day;
-            return [year, month, day].join('-');
+            return new Date().toISOString().split('T')[0];
         }
 
         function handleFormSubmit(e) {
@@ -693,17 +585,12 @@
                 records.unshift(record);
                 showToast("Record added successfully", "success");
                 saveAndRefresh();
-                document.getElementById('recordForm').reset();
-                document.getElementById('collectionDate').value = getTodayString();
-                handleWardChange("");
+                resetForm();
             } else {
-                // Prompt RFI-wise password verification first
-                requestRfiAuth(record.nameRfi, () => {
-                    records[editIndex] = record;
-                    showToast("Record updated successfully", "success");
-                    saveAndRefresh();
-                    resetForm();
-                });
+                records[editIndex] = record;
+                showToast("Record updated successfully", "success");
+                saveAndRefresh();
+                resetForm();
             }
         }
 
@@ -711,39 +598,56 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
             renderTable();
             updateStats();
-            renderSummaries();
+            updateRealTimeSummaries();
         }
 
         function loadLocalStorageData() {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) {
-                try {
-                    records = JSON.parse(saved);
-                } catch(e) {
-                    records = [];
-                }
+                try { records = JSON.parse(saved); } catch(e) { records = []; }
             }
             renderTable();
             updateStats();
-            renderSummaries();
+            updateRealTimeSummaries();
+        }
+
+        function getFilteredRecords() {
+            const wardFilter = document.getElementById('filterWard').value;
+            const dateFilter = document.getElementById('filterDate').value;
+
+            return records.map((r, originalIndex) => ({ ...r, originalIndex })).filter(r => {
+                let matchWard = !wardFilter || r.wardNo === wardFilter;
+                let matchDate = !dateFilter || r.collectionDate === dateFilter;
+                return matchWard && matchDate;
+            });
+        }
+
+        function applyFilters() { renderTable(); }
+
+        function toggleSelectAll(masterCheckbox) {
+            document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = masterCheckbox.checked);
         }
 
         function renderTable() {
             const tbody = document.getElementById('logTableBody');
             const emptyState = document.getElementById('emptyState');
-            const badgeCount = document.getElementById('badge-count');
+            const filtered = getFilteredRecords();
 
-            badgeCount.innerText = records.length;
+            document.getElementById('badge-count').innerText = records.length;
+            document.getElementById('selectAllCheckbox').checked = false;
 
-            if (records.length === 0) {
+            if (filtered.length === 0) {
                 tbody.innerHTML = '';
                 emptyState.classList.remove('hidden');
                 return;
             }
 
             emptyState.classList.add('hidden');
-            tbody.innerHTML = records.map((r, index) => `
+            tbody.innerHTML = filtered.map((r) => `
                 <tr class="hover:bg-slate-50/80 transition">
+                    <td class="py-3 px-3 text-center">
+                        <input type="checkbox" class="row-checkbox rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4 cursor-pointer">
+                    </td>
                     <td class="py-3 px-3 font-semibold text-slate-900">Ward ${r.wardNo}</td>
                     <td class="py-3 px-3 text-slate-600">${r.nameRfi}</td>
                     <td class="py-3 px-3 text-slate-600">${r.nameAfi}</td>
@@ -751,15 +655,15 @@
                     <td class="py-3 px-3 text-slate-500 text-xs">${r.collectionDate}</td>
                     <td class="py-3 px-3 font-semibold text-emerald-600">Rs. ${r.recoveryAmount.toLocaleString()}</td>
                     <td class="py-3 px-3">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeStyle(r.status)}">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 border border-slate-200">
                             ${r.status}
                         </span>
                     </td>
                     <td class="py-3 px-3 text-right space-x-1">
-                        <button onclick="promptEditRecord(${index})" class="p-1.5 bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 rounded-lg transition" title="Edit Entry">
+                        <button onclick="initiateRfiAuth(${r.originalIndex}, 'edit')" class="p-1.5 bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 rounded-lg transition" title="Edit Entry">
                             <i class="fa-regular fa-pen-to-square"></i>
                         </button>
-                        <button onclick="promptDeleteRecord(${index})" class="p-1.5 bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-600 rounded-lg transition" title="Delete Entry">
+                        <button onclick="initiateRfiAuth(${r.originalIndex}, 'delete')" class="p-1.5 bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-600 rounded-lg transition" title="Delete Entry">
                             <i class="fa-regular fa-trash-can"></i>
                         </button>
                     </td>
@@ -767,15 +671,71 @@
             `).join('');
         }
 
-        function getStatusBadgeStyle(status) {
-            switch(status) {
-                case 'Full Recovered': return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-                case 'Paying in Installments': return 'bg-sky-50 text-sky-700 border border-sky-200';
-                case 'Disconnected / Not Paying': return 'bg-rose-50 text-rose-700 border border-rose-200';
-                case 'Sewerage Block': return 'bg-purple-50 text-purple-700 border border-purple-200';
-                case 'Notice / Filed Status': return 'bg-amber-50 text-amber-700 border border-amber-200';
-                case 'Warning ⚠️ to Pay Bill': return 'bg-orange-50 text-orange-700 border border-orange-200';
-                default: return 'bg-slate-100 text-slate-700 border border-slate-200';
+        // Action Authorizer Handler
+        function initiateRfiAuth(originalIndex, actionType) {
+            if (originalIndex < 0 || originalIndex >= records.length) return;
+            
+            pendingRecordIndex = originalIndex;
+            pendingActionType = actionType;
+
+            const rfiName = records[originalIndex].nameRfi;
+            document.getElementById('rfiAuthSub').innerText = `Required Password for RFI (${rfiName}):`;
+            document.getElementById('rfiInputPassword').value = "";
+            document.getElementById('rfiAuthError').classList.add('hidden');
+
+            const modal = document.getElementById('rfiAuthModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+
+        function closeRfiModal() {
+            const modal = document.getElementById('rfiAuthModal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+            pendingRecordIndex = -1;
+            pendingActionType = "";
+        }
+
+        function verifyRfiAction(e) {
+            e.preventDefault();
+            if (pendingRecordIndex === -1) return;
+
+            const rfiName = records[pendingRecordIndex].nameRfi;
+            const enteredPass = document.getElementById('rfiInputPassword').value.trim();
+            const correctPass = rfiPasswords[rfiName];
+
+            if (correctPass && correctPass === enteredPass) {
+                const targetIdx = pendingRecordIndex;
+                const targetAction = pendingActionType;
+
+                closeRfiModal();
+
+                if (targetAction === 'delete') {
+                    records.splice(targetIdx, 1);
+                    saveAndRefresh();
+                    showToast("Record deleted successfully", "success");
+                } else if (targetAction === 'edit') {
+                    const r = records[targetIdx];
+                    document.getElementById('editIndex').value = targetIdx;
+                    document.getElementById('wardNo').value = r.wardNo;
+                    handleWardChange(r.wardNo);
+                    document.getElementById('nameAfi').value = r.nameAfi;
+                    document.getElementById('accountNumber').value = r.accountNumber;
+                    document.getElementById('collectionDate').value = r.collectionDate;
+                    document.getElementById('recoveryAmount').value = r.recoveryAmount;
+                    document.getElementById('statusSelect').value = r.status;
+                    document.getElementById('remarks').value = r.remarks;
+
+                    document.getElementById('form-title').innerText = "Edit Entry Record";
+                    document.getElementById('edit-badge').classList.remove('hidden');
+                    document.getElementById('btnSubmitText').innerText = "Update Record";
+                    document.getElementById('btnSubmitIcon').className = "fa-solid fa-pen text-sm";
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    showToast("Authorized for editing", "success");
+                }
+            } else {
+                document.getElementById('rfiAuthError').classList.remove('hidden');
+                document.getElementById('rfiInputPassword').value = '';
             }
         }
 
@@ -789,218 +749,105 @@
             document.getElementById('stat-pending-count').innerText = pendingCount;
         }
 
-        function renderSummaries() {
-            renderWardSummary();
-            renderRfiSummary();
-            renderAfiSummary();
-        }
+        // Real-Time Summary Generators
+        function updateRealTimeSummaries() {
+            // 1. Ward-wise Aggregation
+            const wardMap = {};
+            // 2. RFI-wise Aggregation
+            const rfiMap = {};
+            // 3. AFI-wise Aggregation
+            const afiMap = {};
+            // 4. Date-wise Aggregation
+            const dateMap = {};
 
-        function renderWardSummary() {
-            const tbody = document.getElementById('wardSummaryBody');
-            const tfoot = document.getElementById('wardSummaryFoot');
-
-            if (records.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">No records logged yet</td></tr>';
-                tfoot.innerHTML = '';
-                return;
-            }
-
-            const map = {};
             records.forEach(r => {
-                if (!map[r.wardNo]) {
-                    map[r.wardNo] = { ward: r.wardNo, subDiv: r.subDivision, entries: 0, accounts: new Set(), full: 0, pending: 0, amount: 0 };
-                }
-                map[r.wardNo].entries++;
-                map[r.wardNo].accounts.add(r.accountNumber);
-                if (r.status === 'Full Recovered') map[r.wardNo].full++;
-                else map[r.wardNo].pending++;
-                map[r.wardNo].amount += r.recoveryAmount;
+                // Ward
+                if (!wardMap[r.wardNo]) wardMap[r.wardNo] = { count: 0, amount: 0 };
+                wardMap[r.wardNo].count += 1;
+                wardMap[r.wardNo].amount += r.recoveryAmount;
+
+                // RFI
+                const rfiName = r.nameRfi || 'Unassigned';
+                if (!rfiMap[rfiName]) rfiMap[rfiName] = { count: 0, amount: 0 };
+                rfiMap[rfiName].count += 1;
+                rfiMap[rfiName].amount += r.recoveryAmount;
+
+                // AFI
+                const afiName = r.nameAfi || 'Unassigned';
+                if (!afiMap[afiName]) afiMap[afiName] = { count: 0, amount: 0 };
+                afiMap[afiName].count += 1;
+                afiMap[afiName].amount += r.recoveryAmount;
+
+                // Date
+                const dKey = r.collectionDate || 'No Date';
+                if (!dateMap[dKey]) dateMap[dKey] = { count: 0, amount: 0 };
+                dateMap[dKey].count += 1;
+                dateMap[dKey].amount += r.recoveryAmount;
             });
 
-            const rows = Object.values(map).sort((a,b) => parseInt(a.ward) - parseInt(b.ward));
-            
-            tbody.innerHTML = rows.map(w => `
-                <tr class="hover:bg-slate-50 transition">
-                    <td class="p-3 font-bold text-slate-800">Ward No ${w.ward}</td>
-                    <td class="p-3 text-slate-600">${w.subDiv}</td>
-                    <td class="p-3 text-center">${w.entries}</td>
-                    <td class="p-3 text-center font-semibold text-sky-700">${w.accounts.size}</td>
-                    <td class="p-3 text-center text-emerald-600 font-medium">${w.full}</td>
-                    <td class="p-3 text-center text-amber-600 font-medium">${w.pending}</td>
-                    <td class="p-3 text-right font-bold text-emerald-600">Rs. ${w.amount.toLocaleString()}</td>
-                </tr>
-            `).join('');
-
-            const grandEntries = rows.reduce((s, r) => s + r.entries, 0);
-            const grandAmount = rows.reduce((s, r) => s + r.amount, 0);
-            tfoot.innerHTML = `
-                <tr>
-                    <td colspan="2" class="p-3 text-right">Total:</td>
-                    <td class="p-3 text-center">${grandEntries}</td>
-                    <td colspan="3" class="p-3"></td>
-                    <td class="p-3 text-right text-emerald-700">Rs. ${grandAmount.toLocaleString()}</td>
-                </tr>
-            `;
-        }
-
-        function renderRfiSummary() {
-            const tbody = document.getElementById('rfiSummaryBody');
-            const tfoot = document.getElementById('rfiSummaryFoot');
-
-            if (records.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">No records logged yet</td></tr>';
-                tfoot.innerHTML = '';
-                return;
-            }
-
-            const map = {};
-            records.forEach(r => {
-                if (!map[r.nameRfi]) {
-                    map[r.nameRfi] = { rfi: r.nameRfi, wards: new Set(), entries: 0, accounts: new Set(), full: 0, pending: 0, amount: 0 };
-                }
-                map[r.nameRfi].wards.add(r.wardNo);
-                map[r.nameRfi].entries++;
-                map[r.nameRfi].accounts.add(r.accountNumber);
-                if (r.status === 'Full Recovered') map[r.nameRfi].full++;
-                else map[r.nameRfi].pending++;
-                map[r.nameRfi].amount += r.recoveryAmount;
-            });
-
-            const rows = Object.values(map);
-            tbody.innerHTML = rows.map(item => `
-                <tr class="hover:bg-slate-50 transition">
-                    <td class="p-3 font-bold text-slate-800">${item.rfi}</td>
-                    <td class="p-3 text-center"><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md text-xs">Wards: ${[...item.wards].join(', ')}</span></td>
-                    <td class="p-3 text-center">${item.entries}</td>
-                    <td class="p-3 text-center font-semibold text-sky-700">${item.accounts.size}</td>
-                    <td class="p-3 text-center text-emerald-600 font-medium">${item.full}</td>
-                    <td class="p-3 text-center text-amber-600 font-medium">${item.pending}</td>
-                    <td class="p-3 text-right font-bold text-emerald-600">Rs. ${item.amount.toLocaleString()}</td>
-                </tr>
-            `).join('');
-
-            const grandAmount = rows.reduce((s, r) => s + r.amount, 0);
-            tfoot.innerHTML = `
-                <tr>
-                    <td colspan="6" class="p-3 text-right">Grand Total:</td>
-                    <td class="p-3 text-right text-emerald-700">Rs. ${grandAmount.toLocaleString()}</td>
-                </tr>
-            `;
-        }
-
-        function renderAfiSummary() {
-            const tbody = document.getElementById('afiSummaryBody');
-            const tfoot = document.getElementById('afiSummaryFoot');
-
-            if (records.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">No records logged yet</td></tr>';
-                tfoot.innerHTML = '';
-                return;
-            }
-
-            const map = {};
-            records.forEach(r => {
-                const key = r.nameAfi + "_" + r.wardNo;
-                if (!map[key]) {
-                    map[key] = { afi: r.nameAfi, ward: r.wardNo, entries: 0, accounts: new Set(), full: 0, pending: 0, amount: 0 };
-                }
-                map[key].entries++;
-                map[key].accounts.add(r.accountNumber);
-                if (r.status === 'Full Recovered') map[key].full++;
-                else map[key].pending++;
-                map[key].amount += r.recoveryAmount;
-            });
-
-            const rows = Object.values(map);
-            tbody.innerHTML = rows.map(item => `
-                <tr class="hover:bg-slate-50 transition">
-                    <td class="p-3 font-bold text-slate-800">${item.afi}</td>
-                    <td class="p-3">Ward ${item.ward}</td>
-                    <td class="p-3 text-center">${item.entries}</td>
-                    <td class="p-3 text-center font-semibold text-sky-700">${item.accounts.size}</td>
-                    <td class="p-3 text-center text-emerald-600 font-medium">${item.full}</td>
-                    <td class="p-3 text-center text-amber-600 font-medium">${item.pending}</td>
-                    <td class="p-3 text-right font-bold text-emerald-600">Rs. ${item.amount.toLocaleString()}</td>
-                </tr>
-            `).join('');
-
-            const grandAmount = rows.reduce((s, r) => s + r.amount, 0);
-            tfoot.innerHTML = `
-                <tr>
-                    <td colspan="6" class="p-3 text-right">Grand Total:</td>
-                    <td class="p-3 text-right text-emerald-700">Rs. ${grandAmount.toLocaleString()}</td>
-                </tr>
-            `;
-        }
-
-        // RFI-wise Authentication Flow for Edit & Delete
-        let currentAuthRfi = "";
-
-        function requestRfiAuth(rfiName, callback) {
-            currentAuthRfi = rfiName;
-            pendingActionCallback = callback;
-
-            document.getElementById('rfiAuthSub').innerText = `Required Password for RFI: ${rfiName}`;
-            document.getElementById('rfiInputPassword').value = "";
-            document.getElementById('rfiAuthError').classList.add('hidden');
-
-            const modal = document.getElementById('rfiAuthModal');
-            modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.remove('opacity-0'), 10);
-        }
-
-        function closeRfiModal() {
-            const modal = document.getElementById('rfiAuthModal');
-            modal.classList.add('opacity-0');
-            setTimeout(() => modal.classList.add('hidden'), 200);
-            pendingActionCallback = null;
-        }
-
-        function verifyRfiAction(e) {
-            e.preventDefault();
-            const enteredPass = document.getElementById('rfiInputPassword').value;
-            const correctPass = rfiPasswords[currentAuthRfi];
-
-            if (correctPass && correctPass === enteredPass) {
-                closeRfiModal();
-                if (pendingActionCallback) pendingActionCallback();
+            // Render Ward Summary
+            const wardBody = document.getElementById('wardSummaryBody');
+            const wardEntries = Object.entries(wardMap).sort((a,b) => parseInt(a[0]) - parseInt(b[0]));
+            document.getElementById('ward-summary-count').innerText = `${wardEntries.length} Wards`;
+            if (wardEntries.length === 0) {
+                wardBody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>`;
             } else {
-                document.getElementById('rfiAuthError').classList.remove('hidden');
-                document.getElementById('rfiInputPassword').value = '';
+                wardBody.innerHTML = wardEntries.map(([ward, data]) => `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-2 px-2.5 font-semibold text-slate-800">Ward ${ward}</td>
+                        <td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td>
+                        <td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td>
+                    </tr>
+                `).join('');
             }
-        }
 
-        function promptEditRecord(index) {
-            const r = records[index];
-            requestRfiAuth(r.nameRfi, () => {
-                document.getElementById('editIndex').value = index;
-                document.getElementById('wardNo').value = r.wardNo;
-                handleWardChange(r.wardNo);
-                document.getElementById('nameAfi').value = r.nameAfi;
-                document.getElementById('accountNumber').value = r.accountNumber;
-                document.getElementById('collectionDate').value = r.collectionDate;
-                document.getElementById('recoveryAmount').value = r.recoveryAmount;
-                document.getElementById('statusSelect').value = r.status;
-                document.getElementById('remarks').value = r.remarks;
+            // Render RFI Summary
+            const rfiBody = document.getElementById('rfiSummaryBody');
+            const rfiEntries = Object.entries(rfiMap).sort((a,b) => b[1].amount - a[1].amount);
+            document.getElementById('rfi-summary-count').innerText = `${rfiEntries.length} RFIs`;
+            if (rfiEntries.length === 0) {
+                rfiBody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>`;
+            } else {
+                rfiBody.innerHTML = rfiEntries.map(([rfi, data]) => `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-2 px-2.5 font-semibold text-slate-800">${rfi}</td>
+                        <td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td>
+                        <td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            }
 
-                document.getElementById('form-title').innerText = "Edit Entry Record";
-                document.getElementById('edit-badge').classList.remove('hidden');
-                document.getElementById('btnSubmitText').innerText = "Update Record";
-                document.getElementById('btnSubmitIcon').className = "fa-solid fa-pen text-sm";
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                showToast("Authorized for editing", "success");
-            });
-        }
+            // Render AFI Summary
+            const afiBody = document.getElementById('afiSummaryBody');
+            const afiEntries = Object.entries(afiMap).sort((a,b) => b[1].amount - a[1].amount);
+            document.getElementById('afi-summary-count').innerText = `${afiEntries.length} AFIs`;
+            if (afiEntries.length === 0) {
+                afiBody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>`;
+            } else {
+                afiBody.innerHTML = afiEntries.map(([afi, data]) => `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-2 px-2.5 font-semibold text-slate-800 truncate max-w-[140px]" title="${afi}">${afi}</td>
+                        <td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td>
+                        <td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            }
 
-        function promptDeleteRecord(index) {
-            const r = records[index];
-            requestRfiAuth(r.nameRfi, () => {
-                showConfirmModal("Delete Entry", "Are you sure you want to delete this log entry? This action cannot be undone.", () => {
-                    records.splice(index, 1);
-                    saveAndRefresh();
-                    showToast("Record deleted successfully", "success");
-                });
-            });
+            // Render Date Summary
+            const dateBody = document.getElementById('dateSummaryBody');
+            const dateEntries = Object.entries(dateMap).sort((a,b) => new Date(b[0]) - new Date(a[0]));
+            document.getElementById('date-summary-count').innerText = `${dateEntries.length} Days`;
+            if (dateEntries.length === 0) {
+                dateBody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>`;
+            } else {
+                dateBody.innerHTML = dateEntries.map(([date, data]) => `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-2 px-2.5 font-semibold text-slate-800">${date}</td>
+                        <td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td>
+                        <td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            }
         }
 
         function resetForm() {
@@ -1015,134 +862,46 @@
         }
 
         function clearAllRecords() {
-            if (records.length === 0) {
-                showToast("No records to clear.", "warning");
-                return;
-            }
-            showConfirmModal("Clear All Records", "Are you sure you want to delete ALL logged field records? This will clear all data.", () => {
+            if (records.length === 0) return;
+            if (confirm("Are you sure you want to clear all logged records?")) {
                 records = [];
                 saveAndRefresh();
                 showToast("All records cleared.", "success");
-            });
+            }
         }
 
         function exportExcel() {
-            if (records.length === 0) {
-                showToast("No data available to export.", "warning");
-                return;
-            }
-
-            const dataToExport = records.map((r, idx) => ({
-                "Sr.#": idx + 1,
-                "Ward No": r.wardNo,
-                "Sub Division": r.subDivision,
-                "RFI Name": r.nameRfi,
-                "AFI Name": r.nameAfi,
-                "Account ID": r.accountNumber,
-                "Collection Date": r.collectionDate,
-                "Recovery Amount (Rs.)": r.recoveryAmount,
-                "Status": r.status,
-                "Remarks": r.remarks
-            }));
-
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            if (records.length === 0) return;
+            const worksheet = XLSX.utils.json_to_sheet(records);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Field Log");
-            XLSX.writeFile(workbook, `Field_Supervisor_Log_${getTodayString()}.xlsx`);
-            showToast("Excel file downloaded successfully!", "success");
+            XLSX.writeFile(workbook, `Field_Log_${getTodayString()}.xlsx`);
         }
 
         function exportCSV() {
-            if (records.length === 0) {
-                showToast("No data available to export.", "warning");
-                return;
-            }
-            const dataToExport = records.map((r, idx) => ({
-                "Sr.#": idx + 1,
-                "Ward No": r.wardNo,
-                "Sub Division": r.subDivision,
-                "RFI Name": r.nameRfi,
-                "AFI Name": r.nameAfi,
-                "Account ID": r.accountNumber,
-                "Collection Date": r.collectionDate,
-                "Recovery Amount": r.recoveryAmount,
-                "Status": r.status,
-                "Remarks": r.remarks
-            }));
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            if (records.length === 0) return;
+            const worksheet = XLSX.utils.json_to_sheet(records);
             const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
             const blob = new Blob([csvOutput], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.setAttribute("download", `Field_Supervisor_Log_${getTodayString()}.csv`);
+            link.setAttribute("download", `Field_Log_${getTodayString()}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            showToast("CSV file exported successfully!", "success");
         }
 
         function copyToClipboard() {
-            if (records.length === 0) {
-                showToast("No data available to copy.", "warning");
-                return;
-            }
-            const tsvContent = records.map(r => 
-                [r.wardNo, r.subDivision, r.nameRfi, r.nameAfi, r.accountNumber, r.collectionDate, r.recoveryAmount, r.status, r.remarks].join("\t")
-            ).join("\n");
-            
-            navigator.clipboard.writeText(tsvContent).then(() => {
-                showToast("Copied to clipboard! You can now paste directly into Microsoft Excel.", "success");
-            }).catch(err => {
-                showToast("Failed to copy data.", "warning");
-            });
+            if (records.length === 0) return;
+            const tsvContent = records.map(r => Object.values(r).join("\t")).join("\n");
+            navigator.clipboard.writeText(tsvContent).then(() => showToast("Copied to clipboard!", "success"));
         }
 
-        // Custom Modal handlers
-        function showConfirmModal(title, message, onConfirm) {
-            const modal = document.getElementById('modal-container');
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-message').innerText = message;
-            
-            modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.remove('opacity-0'), 10);
-
-            const confirmBtn = document.getElementById('modal-confirm-btn');
-            const cancelBtn = document.getElementById('modal-cancel-btn');
-
-            const closeModal = () => {
-                modal.classList.add('opacity-0');
-                setTimeout(() => modal.classList.add('hidden'), 200);
-                confirmBtn.replaceWith(confirmBtn.cloneNode(true));
-                cancelBtn.replaceWith(cancelBtn.cloneNode(true));
-            };
-
-            confirmBtn.onclick = () => {
-                onConfirm();
-                closeModal();
-            };
-            cancelBtn.onclick = closeModal;
-            modal.onclick = (e) => {
-                if (e.target === modal) closeModal();
-            };
-        }
-
-        // Toast Notification helper
         function showToast(message, type = "success") {
             const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toast-message');
-            const toastIcon = document.getElementById('toast-icon');
-
-            toastMsg.innerText = message;
-            if (type === "success") {
-                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-xl";
-            } else {
-                toastIcon.className = "fa-solid fa-triangle-exclamation text-amber-400 text-xl";
-            }
-
+            document.getElementById('toast-message').innerText = message;
             toast.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3500);
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
         }
     </script>
 </body>
