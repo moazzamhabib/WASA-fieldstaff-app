@@ -846,17 +846,10 @@
 
     <!-- FIREBASE REAL-TIME CLOUD SYNC MODULE -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-analytics.js";
-        import { getDatabase, ref, onValue, push, set, update, remove } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
+        import { getDatabase, ref, onValue, push, set, update, remove } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
-        // IMPORTANT: Ensure your Firebase Console Realtime Database Rules are set to permanent access:
-        // {
-        //   "rules": {
-        //     ".read": true,
-        //     ".write": true
-        //   }
-        // }
         const firebaseConfig = {
             apiKey: "AIzaSyAOlSvYOPtClCVFieZF31xhKBuq-vvtTcs",
             authDomain: "wasa-field-supervisor-pwa.firebaseapp.com",
