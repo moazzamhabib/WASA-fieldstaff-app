@@ -458,7 +458,7 @@
         </div>
     </main>
 
-    <!-- JavaScript Logic -->
+    <!-- JavaScript Logic & Firebase Realtime Cloud Sync -->
     <script>
         const ADMIN_USER = "admin";
         const ADMIN_PASS = "secure123";
@@ -505,8 +505,6 @@
             "Muhammad Rehan": "rehan123"
         };
 
-        // Standard, Single Unified LocalStorage Key
-        const STORAGE_KEY = 'field_supervisor_pwa_records_v1';
         let records = [];
         
         // Modal State Variables
@@ -516,7 +514,6 @@
         window.onload = function() {
             populateWardDropdowns();
             document.getElementById('collectionDate').value = getTodayString();
-            loadLocalStorageData();
         };
 
         function handleAuthLogin(e) {
@@ -584,31 +581,14 @@
             if (editIndex === -1) {
                 records.unshift(record);
                 showToast("Record added successfully", "success");
-                saveAndRefresh();
+                syncRecordsToCloud();
                 resetForm();
             } else {
                 records[editIndex] = record;
                 showToast("Record updated successfully", "success");
-                saveAndRefresh();
+                syncRecordsToCloud();
                 resetForm();
             }
-        }
-
-        function saveAndRefresh() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-            renderTable();
-            updateStats();
-            updateRealTimeSummaries();
-        }
-
-        function loadLocalStorageData() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                try { records = JSON.parse(saved); } catch(e) { records = []; }
-            }
-            renderTable();
-            updateStats();
-            updateRealTimeSummaries();
         }
 
         function getFilteredRecords() {
@@ -712,7 +692,7 @@
 
                 if (targetAction === 'delete') {
                     records.splice(targetIdx, 1);
-                    saveAndRefresh();
+                    syncRecordsToCloud();
                     showToast("Record deleted successfully", "success");
                 } else if (targetAction === 'edit') {
                     const r = records[targetIdx];
@@ -751,34 +731,23 @@
 
         // Real-Time Summary Generators
         function updateRealTimeSummaries() {
-            // 1. Ward-wise Aggregation
-            const wardMap = {};
-            // 2. RFI-wise Aggregation
-            const rfiMap = {};
-            // 3. AFI-wise Aggregation
-            const afiMap = {};
-            // 4. Date-wise Aggregation
-            const dateMap = {};
+            const wardMap = {}, rfiMap = {}, afiMap = {}, dateMap = {};
 
             records.forEach(r => {
-                // Ward
                 if (!wardMap[r.wardNo]) wardMap[r.wardNo] = { count: 0, amount: 0 };
                 wardMap[r.wardNo].count += 1;
                 wardMap[r.wardNo].amount += r.recoveryAmount;
 
-                // RFI
                 const rfiName = r.nameRfi || 'Unassigned';
                 if (!rfiMap[rfiName]) rfiMap[rfiName] = { count: 0, amount: 0 };
                 rfiMap[rfiName].count += 1;
                 rfiMap[rfiName].amount += r.recoveryAmount;
 
-                // AFI
                 const afiName = r.nameAfi || 'Unassigned';
                 if (!afiMap[afiName]) afiMap[afiName] = { count: 0, amount: 0 };
                 afiMap[afiName].count += 1;
                 afiMap[afiName].amount += r.recoveryAmount;
 
-                // Date
                 const dKey = r.collectionDate || 'No Date';
                 if (!dateMap[dKey]) dateMap[dKey] = { count: 0, amount: 0 };
                 dateMap[dKey].count += 1;
@@ -789,65 +758,29 @@
             const wardBody = document.getElementById('wardSummaryBody');
             const wardEntries = Object.entries(wardMap).sort((a,b) => parseInt(a[0]) - parseInt(b[0]));
             document.getElementById('ward-summary-count').innerText = `${wardEntries.length} Wards`;
-            if (wardEntries.length === 0) {
-                wardBody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>`;
-            } else {
-                wardBody.innerHTML = wardEntries.map(([ward, data]) => `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="py-2 px-2.5 font-semibold text-slate-800">Ward ${ward}</td>
-                        <td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td>
-                        <td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td>
-                    </tr>
-                `).join('');
-            }
+            wardBody.innerHTML = wardEntries.length === 0 ? `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>` : wardEntries.map(([ward, data]) => `
+                <tr class="hover:bg-slate-50 transition"><td class="py-2 px-2.5 font-semibold text-slate-800">Ward ${ward}</td><td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td><td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td></tr>`).join('');
 
             // Render RFI Summary
             const rfiBody = document.getElementById('rfiSummaryBody');
             const rfiEntries = Object.entries(rfiMap).sort((a,b) => b[1].amount - a[1].amount);
             document.getElementById('rfi-summary-count').innerText = `${rfiEntries.length} RFIs`;
-            if (rfiEntries.length === 0) {
-                rfiBody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>`;
-            } else {
-                rfiBody.innerHTML = rfiEntries.map(([rfi, data]) => `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="py-2 px-2.5 font-semibold text-slate-800">${rfi}</td>
-                        <td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td>
-                        <td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td>
-                    </tr>
-                `).join('');
-            }
+            rfiBody.innerHTML = rfiEntries.length === 0 ? `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>` : rfiEntries.map(([rfi, data]) => `
+                <tr class="hover:bg-slate-50 transition"><td class="py-2 px-2.5 font-semibold text-slate-800">${rfi}</td><td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td><td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td></tr>`).join('');
 
             // Render AFI Summary
             const afiBody = document.getElementById('afiSummaryBody');
             const afiEntries = Object.entries(afiMap).sort((a,b) => b[1].amount - a[1].amount);
             document.getElementById('afi-summary-count').innerText = `${afiEntries.length} AFIs`;
-            if (afiEntries.length === 0) {
-                afiBody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>`;
-            } else {
-                afiBody.innerHTML = afiEntries.map(([afi, data]) => `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="py-2 px-2.5 font-semibold text-slate-800 truncate max-w-[140px]" title="${afi}">${afi}</td>
-                        <td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td>
-                        <td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td>
-                    </tr>
-                `).join('');
-            }
+            afiBody.innerHTML = afiEntries.length === 0 ? `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>` : afiEntries.map(([afi, data]) => `
+                <tr class="hover:bg-slate-50 transition"><td class="py-2 px-2.5 font-semibold text-slate-800 truncate max-w-[140px]" title="${afi}">${afi}</td><td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td><td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td></tr>`).join('');
 
             // Render Date Summary
             const dateBody = document.getElementById('dateSummaryBody');
             const dateEntries = Object.entries(dateMap).sort((a,b) => new Date(b[0]) - new Date(a[0]));
             document.getElementById('date-summary-count').innerText = `${dateEntries.length} Days`;
-            if (dateEntries.length === 0) {
-                dateBody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>`;
-            } else {
-                dateBody.innerHTML = dateEntries.map(([date, data]) => `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="py-2 px-2.5 font-semibold text-slate-800">${date}</td>
-                        <td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td>
-                        <td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td>
-                    </tr>
-                `).join('');
-            }
+            dateBody.innerHTML = dateEntries.length === 0 ? `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>` : dateEntries.map(([date, data]) => `
+                <tr class="hover:bg-slate-50 transition"><td class="py-2 px-2.5 font-semibold text-slate-800">${date}</td><td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td><td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td></tr>`).join('');
         }
 
         function resetForm() {
@@ -865,7 +798,7 @@
             if (records.length === 0) return;
             if (confirm("Are you sure you want to clear all logged records?")) {
                 records = [];
-                saveAndRefresh();
+                syncRecordsToCloud();
                 showToast("All records cleared.", "success");
             }
         }
@@ -904,24 +837,46 @@
             setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
         }
     </script>
+
+    <!-- FIREBASE REAL-TIME CLOUD SYNC MODULE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-analytics.js";
+        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAOlSvYOPtClCVFieZF31xhKBuq-vvtTcs",
+            authDomain: "wasa-field-supervisor-pwa.firebaseapp.com",
+            projectId: "wasa-field-supervisor-pwa",
+            storageBucket: "wasa-field-supervisor-pwa.firebasestorage.app",
+            messagingSenderId: "1015764899812",
+            appId: "1:1015764899812:web:e227e734bbb176bc2c59f1",
+            measurementId: "G-JPRF47MM34"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getDatabase(app);
+
+        // Reference path in your Realtime Database
+        const dbRef = ref(db, 'global_field_records');
+
+        // 1. Listen for real-time updates from the cloud across the world
+        onValue(dbRef, (snapshot) => {
+            const data = snapshot.val();
+            records = Array.isArray(data) ? data : [];
+            renderTable();
+            updateStats();
+            updateRealTimeSummaries();
+        });
+
+        // 2. Global function to push record changes back to Firebase cloud
+        window.syncRecordsToCloud = function() {
+            set(dbRef, records).catch((error) => {
+                console.error("Cloud sync error:", error);
+                showToast("Error saving to cloud", "error");
+            });
+        };
+    </script>
 </body>
- <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyAOlSvYOPtClCVFieZF31xhKBuq-vvtTcs",
-    authDomain: "wasa-field-supervisor-pwa.firebaseapp.com",
-    projectId: "wasa-field-supervisor-pwa",
-    storageBucket: "wasa-field-supervisor-pwa.firebasestorage.app",
-    messagingSenderId: "1015764899812",
-    appId: "1:1015764899812:web:e227e734bbb176bc2c59f1",
-    measurementId: "G-JPRF47MM34"
-  };
-
 </html>
