@@ -149,7 +149,13 @@
                 </div>
             </div>
             
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2.5">
+                <!-- Live Sync Status Pill -->
+                <span id="syncStatusBadge" class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                    <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span id="syncStatusText">Connecting...</span>
+                </span>
+
                 <button onclick="exportExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm">
                     <i class="fa-solid fa-file-excel"></i>
                     <span class="hidden sm:inline">Excel</span>
@@ -188,7 +194,7 @@
                 </div>
 
                 <form id="recordForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
-                    <input type="hidden" id="editIndex" value="-1">
+                    <input type="hidden" id="editKey" value="">
 
                     <!-- Ward Number Selection -->
                     <div>
@@ -506,10 +512,8 @@
         };
 
         let records = [];
-        
-        // Modal State Variables
-        let pendingRecordIndex = -1;
-        let pendingActionType = ""; // "edit" or "delete"
+        let pendingRecordKey = "";
+        let pendingActionType = "";
 
         window.onload = function() {
             populateWardDropdowns();
@@ -564,7 +568,7 @@
 
         function handleFormSubmit(e) {
             e.preventDefault();
-            const editIndex = parseInt(document.getElementById('editIndex').value);
+            const editKey = document.getElementById('editKey').value;
             
             const record = {
                 wardNo: document.getElementById('wardNo').value,
@@ -575,27 +579,23 @@
                 collectionDate: document.getElementById('collectionDate').value,
                 recoveryAmount: parseFloat(document.getElementById('recoveryAmount').value) || 0,
                 status: document.getElementById('statusSelect').value,
-                remarks: document.getElementById('remarks').value.trim()
+                remarks: document.getElementById('remarks').value.trim(),
+                timestamp: Date.now()
             };
 
-            if (editIndex === -1) {
-                records.unshift(record);
-                showToast("Record added successfully", "success");
-                syncRecordsToCloud();
-                resetForm();
+            if (!editKey) {
+                window.addRecordToCloud(record);
             } else {
-                records[editIndex] = record;
-                showToast("Record updated successfully", "success");
-                syncRecordsToCloud();
-                resetForm();
+                window.updateRecordInCloud(editKey, record);
             }
+            resetForm();
         }
 
         function getFilteredRecords() {
             const wardFilter = document.getElementById('filterWard').value;
             const dateFilter = document.getElementById('filterDate').value;
 
-            return records.map((r, originalIndex) => ({ ...r, originalIndex })).filter(r => {
+            return records.filter(r => {
                 let matchWard = !wardFilter || r.wardNo === wardFilter;
                 let matchDate = !dateFilter || r.collectionDate === dateFilter;
                 return matchWard && matchDate;
@@ -633,17 +633,17 @@
                     <td class="py-3 px-3 text-slate-600">${r.nameAfi}</td>
                     <td class="py-3 px-3 font-mono text-xs text-sky-700 bg-sky-50/50 rounded-lg px-2 py-1 inline-block mt-1">${r.accountNumber}</td>
                     <td class="py-3 px-3 text-slate-500 text-xs">${r.collectionDate}</td>
-                    <td class="py-3 px-3 font-semibold text-emerald-600">Rs. ${r.recoveryAmount.toLocaleString()}</td>
+                    <td class="py-3 px-3 font-semibold text-emerald-600">Rs. ${(Number(r.recoveryAmount) || 0).toLocaleString()}</td>
                     <td class="py-3 px-3">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 border border-slate-200">
                             ${r.status}
                         </span>
                     </td>
                     <td class="py-3 px-3 text-right space-x-1">
-                        <button onclick="initiateRfiAuth(${r.originalIndex}, 'edit')" class="p-1.5 bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 rounded-lg transition" title="Edit Entry">
+                        <button onclick="initiateRfiAuth('${r._key}', 'edit')" class="p-1.5 bg-slate-100 hover:bg-sky-100 text-slate-600 hover:text-sky-700 rounded-lg transition" title="Edit Entry">
                             <i class="fa-regular fa-pen-to-square"></i>
                         </button>
-                        <button onclick="initiateRfiAuth(${r.originalIndex}, 'delete')" class="p-1.5 bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-600 rounded-lg transition" title="Delete Entry">
+                        <button onclick="initiateRfiAuth('${r._key}', 'delete')" class="p-1.5 bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-600 rounded-lg transition" title="Delete Entry">
                             <i class="fa-regular fa-trash-can"></i>
                         </button>
                     </td>
@@ -651,14 +651,14 @@
             `).join('');
         }
 
-        // Action Authorizer Handler
-        function initiateRfiAuth(originalIndex, actionType) {
-            if (originalIndex < 0 || originalIndex >= records.length) return;
+        function initiateRfiAuth(recordKey, actionType) {
+            const target = records.find(r => r._key === recordKey);
+            if (!target) return;
             
-            pendingRecordIndex = originalIndex;
+            pendingRecordKey = recordKey;
             pendingActionType = actionType;
 
-            const rfiName = records[originalIndex].nameRfi;
+            const rfiName = target.nameRfi;
             document.getElementById('rfiAuthSub').innerText = `Required Password for RFI (${rfiName}):`;
             document.getElementById('rfiInputPassword').value = "";
             document.getElementById('rfiAuthError').classList.add('hidden');
@@ -672,39 +672,42 @@
             const modal = document.getElementById('rfiAuthModal');
             modal.classList.add('opacity-0');
             setTimeout(() => modal.classList.add('hidden'), 200);
-            pendingRecordIndex = -1;
+            pendingRecordKey = "";
             pendingActionType = "";
         }
 
         function verifyRfiAction(e) {
             e.preventDefault();
-            if (pendingRecordIndex === -1) return;
+            if (!pendingRecordKey) return;
 
-            const rfiName = records[pendingRecordIndex].nameRfi;
+            const target = records.find(r => r._key === pendingRecordKey);
+            if (!target) {
+                closeRfiModal();
+                return;
+            }
+
+            const rfiName = target.nameRfi;
             const enteredPass = document.getElementById('rfiInputPassword').value.trim();
             const correctPass = rfiPasswords[rfiName];
 
             if (correctPass && correctPass === enteredPass) {
-                const targetIdx = pendingRecordIndex;
+                const targetKey = pendingRecordKey;
                 const targetAction = pendingActionType;
 
                 closeRfiModal();
 
                 if (targetAction === 'delete') {
-                    records.splice(targetIdx, 1);
-                    syncRecordsToCloud();
-                    showToast("Record deleted successfully", "success");
+                    window.deleteRecordFromCloud(targetKey);
                 } else if (targetAction === 'edit') {
-                    const r = records[targetIdx];
-                    document.getElementById('editIndex').value = targetIdx;
-                    document.getElementById('wardNo').value = r.wardNo;
-                    handleWardChange(r.wardNo);
-                    document.getElementById('nameAfi').value = r.nameAfi;
-                    document.getElementById('accountNumber').value = r.accountNumber;
-                    document.getElementById('collectionDate').value = r.collectionDate;
-                    document.getElementById('recoveryAmount').value = r.recoveryAmount;
-                    document.getElementById('statusSelect').value = r.status;
-                    document.getElementById('remarks').value = r.remarks;
+                    document.getElementById('editKey').value = targetKey;
+                    document.getElementById('wardNo').value = target.wardNo;
+                    handleWardChange(target.wardNo);
+                    document.getElementById('nameAfi').value = target.nameAfi;
+                    document.getElementById('accountNumber').value = target.accountNumber;
+                    document.getElementById('collectionDate').value = target.collectionDate;
+                    document.getElementById('recoveryAmount').value = target.recoveryAmount;
+                    document.getElementById('statusSelect').value = target.status;
+                    document.getElementById('remarks').value = target.remarks || "";
 
                     document.getElementById('form-title').innerText = "Edit Entry Record";
                     document.getElementById('edit-badge').classList.remove('hidden');
@@ -721,7 +724,7 @@
 
         function updateStats() {
             const totalCount = records.length;
-            const totalAmount = records.reduce((sum, r) => sum + r.recoveryAmount, 0);
+            const totalAmount = records.reduce((sum, r) => sum + (Number(r.recoveryAmount) || 0), 0);
             const pendingCount = records.filter(r => r.status !== 'Full Recovered').length;
 
             document.getElementById('stat-total-count').innerText = totalCount;
@@ -729,53 +732,50 @@
             document.getElementById('stat-pending-count').innerText = pendingCount;
         }
 
-        // Real-Time Summary Generators
         function updateRealTimeSummaries() {
             const wardMap = {}, rfiMap = {}, afiMap = {}, dateMap = {};
 
             records.forEach(r => {
+                const amt = Number(r.recoveryAmount) || 0;
+
                 if (!wardMap[r.wardNo]) wardMap[r.wardNo] = { count: 0, amount: 0 };
                 wardMap[r.wardNo].count += 1;
-                wardMap[r.wardNo].amount += r.recoveryAmount;
+                wardMap[r.wardNo].amount += amt;
 
                 const rfiName = r.nameRfi || 'Unassigned';
                 if (!rfiMap[rfiName]) rfiMap[rfiName] = { count: 0, amount: 0 };
                 rfiMap[rfiName].count += 1;
-                rfiMap[rfiName].amount += r.recoveryAmount;
+                rfiMap[rfiName].amount += amt;
 
                 const afiName = r.nameAfi || 'Unassigned';
                 if (!afiMap[afiName]) afiMap[afiName] = { count: 0, amount: 0 };
                 afiMap[afiName].count += 1;
-                afiMap[afiName].amount += r.recoveryAmount;
+                afiMap[afiName].amount += amt;
 
                 const dKey = r.collectionDate || 'No Date';
                 if (!dateMap[dKey]) dateMap[dKey] = { count: 0, amount: 0 };
                 dateMap[dKey].count += 1;
-                dateMap[dKey].amount += r.recoveryAmount;
+                dateMap[dKey].amount += amt;
             });
 
-            // Render Ward Summary
             const wardBody = document.getElementById('wardSummaryBody');
             const wardEntries = Object.entries(wardMap).sort((a,b) => parseInt(a[0]) - parseInt(b[0]));
             document.getElementById('ward-summary-count').innerText = `${wardEntries.length} Wards`;
             wardBody.innerHTML = wardEntries.length === 0 ? `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>` : wardEntries.map(([ward, data]) => `
                 <tr class="hover:bg-slate-50 transition"><td class="py-2 px-2.5 font-semibold text-slate-800">Ward ${ward}</td><td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td><td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td></tr>`).join('');
 
-            // Render RFI Summary
             const rfiBody = document.getElementById('rfiSummaryBody');
             const rfiEntries = Object.entries(rfiMap).sort((a,b) => b[1].amount - a[1].amount);
             document.getElementById('rfi-summary-count').innerText = `${rfiEntries.length} RFIs`;
             rfiBody.innerHTML = rfiEntries.length === 0 ? `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>` : rfiEntries.map(([rfi, data]) => `
                 <tr class="hover:bg-slate-50 transition"><td class="py-2 px-2.5 font-semibold text-slate-800">${rfi}</td><td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td><td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td></tr>`).join('');
 
-            // Render AFI Summary
             const afiBody = document.getElementById('afiSummaryBody');
             const afiEntries = Object.entries(afiMap).sort((a,b) => b[1].amount - a[1].amount);
             document.getElementById('afi-summary-count').innerText = `${afiEntries.length} AFIs`;
             afiBody.innerHTML = afiEntries.length === 0 ? `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>` : afiEntries.map(([afi, data]) => `
                 <tr class="hover:bg-slate-50 transition"><td class="py-2 px-2.5 font-semibold text-slate-800 truncate max-w-[140px]" title="${afi}">${afi}</td><td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td><td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td></tr>`).join('');
 
-            // Render Date Summary
             const dateBody = document.getElementById('dateSummaryBody');
             const dateEntries = Object.entries(dateMap).sort((a,b) => new Date(b[0]) - new Date(a[0]));
             document.getElementById('date-summary-count').innerText = `${dateEntries.length} Days`;
@@ -785,7 +785,7 @@
 
         function resetForm() {
             document.getElementById('recordForm').reset();
-            document.getElementById('editIndex').value = "-1";
+            document.getElementById('editKey').value = "";
             document.getElementById('form-title').innerText = "Entry Logging Form";
             document.getElementById('edit-badge').classList.add('hidden');
             document.getElementById('btnSubmitText').innerText = "Add Record";
@@ -796,16 +796,18 @@
 
         function clearAllRecords() {
             if (records.length === 0) return;
-            if (confirm("Are you sure you want to clear all logged records?")) {
-                records = [];
-                syncRecordsToCloud();
-                showToast("All records cleared.", "success");
+            if (confirm("Are you sure you want to clear all logged records from the cloud?")) {
+                window.clearCloudRecords();
             }
+        }
+
+        function getCleanExportData() {
+            return records.map(({ _key, timestamp, ...rest }) => rest);
         }
 
         function exportExcel() {
             if (records.length === 0) return;
-            const worksheet = XLSX.utils.json_to_sheet(records);
+            const worksheet = XLSX.utils.json_to_sheet(getCleanExportData());
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Field Log");
             XLSX.writeFile(workbook, `Field_Log_${getTodayString()}.xlsx`);
@@ -813,7 +815,7 @@
 
         function exportCSV() {
             if (records.length === 0) return;
-            const worksheet = XLSX.utils.json_to_sheet(records);
+            const worksheet = XLSX.utils.json_to_sheet(getCleanExportData());
             const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
             const blob = new Blob([csvOutput], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
@@ -826,13 +828,17 @@
 
         function copyToClipboard() {
             if (records.length === 0) return;
-            const tsvContent = records.map(r => Object.values(r).join("\t")).join("\n");
+            const tsvContent = getCleanExportData().map(r => Object.values(r).join("\t")).join("\n");
             navigator.clipboard.writeText(tsvContent).then(() => showToast("Copied to clipboard!", "success"));
         }
 
         function showToast(message, type = "success") {
             const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
             document.getElementById('toast-message').innerText = message;
+            icon.className = type === "error"
+                ? "fa-solid fa-circle-exclamation text-rose-400 text-xl"
+                : "fa-solid fa-circle-check text-emerald-400 text-xl";
             toast.classList.remove('translate-y-20', 'opacity-0');
             setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
         }
@@ -842,11 +848,12 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-analytics.js";
-        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-database.js";
+        import { getDatabase, ref, onValue, push, set, update, remove } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAOlSvYOPtClCVFieZF31xhKBuq-vvtTcs",
             authDomain: "wasa-field-supervisor-pwa.firebaseapp.com",
+            databaseURL: "https://wasa-field-supervisor-pwa-default-rtdb.firebaseio.com",
             projectId: "wasa-field-supervisor-pwa",
             storageBucket: "wasa-field-supervisor-pwa.firebasestorage.app",
             messagingSenderId: "1015764899812",
@@ -858,24 +865,81 @@
         const analytics = getAnalytics(app);
         const db = getDatabase(app);
 
-        // Reference path in your Realtime Database
-        const dbRef = ref(db, 'global_field_records');
+        const recordsRef = ref(db, 'global_field_records');
+        const connectedRef = ref(db, '.info/connected');
 
-        // 1. Listen for real-time updates from the cloud across the world
-        onValue(dbRef, (snapshot) => {
+        // Monitor live Firebase connection status
+        onValue(connectedRef, (snap) => {
+            const badge = document.getElementById('syncStatusBadge');
+            const dot = document.getElementById('syncStatusDot');
+            const text = document.getElementById('syncStatusText');
+
+            if (snap.val() === true) {
+                badge.className = "inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200";
+                dot.className = "w-2 h-2 rounded-full bg-emerald-500";
+                text.innerText = "Live Sync On";
+            } else {
+                badge.className = "inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200";
+                dot.className = "w-2 h-2 rounded-full bg-rose-500 animate-pulse";
+                text.innerText = "Offline";
+            }
+        });
+
+        // Listen for real-time updates across all devices
+        onValue(recordsRef, (snapshot) => {
             const data = snapshot.val();
-            records = Array.isArray(data) ? data : [];
+            if (!data) {
+                records = [];
+            } else if (Array.isArray(data)) {
+                records = data.filter(Boolean).map((item, idx) => ({ ...item, _key: String(idx) }));
+            } else {
+                records = Object.entries(data)
+                    .map(([key, val]) => ({ ...val, _key: key }))
+                    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            }
             renderTable();
             updateStats();
             updateRealTimeSummaries();
+        }, (error) => {
+            console.error("Firebase read error:", error);
+            showToast("Database permission error: " + error.message, "error");
         });
 
-        // 2. Global function to push record changes back to Firebase cloud
-        window.syncRecordsToCloud = function() {
-            set(dbRef, records).catch((error) => {
-                console.error("Cloud sync error:", error);
-                showToast("Error saving to cloud", "error");
-            });
+        window.addRecordToCloud = function(record) {
+            const newRef = push(recordsRef);
+            set(newRef, record)
+                .then(() => showToast("Saved & synced to cloud!", "success"))
+                .catch((err) => {
+                    console.error("Add error:", err);
+                    showToast("Sync failed: " + err.message, "error");
+                });
+        };
+
+        window.updateRecordInCloud = function(key, record) {
+            update(ref(db, `global_field_records/${key}`), record)
+                .then(() => showToast("Record updated in cloud!", "success"))
+                .catch((err) => {
+                    console.error("Update error:", err);
+                    showToast("Update failed: " + err.message, "error");
+                });
+        };
+
+        window.deleteRecordFromCloud = function(key) {
+            remove(ref(db, `global_field_records/${key}`))
+                .then(() => showToast("Record deleted from cloud!", "success"))
+                .catch((err) => {
+                    console.error("Delete error:", err);
+                    showToast("Delete failed: " + err.message, "error");
+                });
+        };
+
+        window.clearCloudRecords = function() {
+            set(recordsRef, null)
+                .then(() => showToast("All cloud records cleared.", "success"))
+                .catch((err) => {
+                    console.error("Clear error:", err);
+                    showToast("Clear failed: " + err.message, "error");
+                });
         };
     </script>
 </body>
