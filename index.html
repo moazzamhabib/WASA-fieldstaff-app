@@ -130,44 +130,6 @@
         </div>
     </div>
 
-    <!-- Delete All Entries Security Warning & Authorization Modal -->
-    <div id="deleteAllModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
-        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-rose-100 space-y-4">
-            <div class="flex items-center space-x-3 text-rose-600">
-                <div class="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-xl">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-slate-900 text-base">⚠️ WARNING: Delete All Entries</h3>
-                    <p class="text-xs text-rose-600 font-medium">This action will wipe all logs permanently!</p>
-                </div>
-            </div>
-            
-            <p class="text-xs text-slate-500">
-                To prevent accidental deletion, please enter the authorization password for RFI <strong>Aon Shah</strong>.
-            </p>
-
-            <form onsubmit="verifyDeleteAllAction(event)" class="space-y-3">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Aon Shah Password *</label>
-                    <input type="password" id="deleteAllInputPassword" required placeholder="Enter Aon Shah password..."
-                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition">
-                </div>
-                <div id="deleteAllAuthError" class="hidden text-xs text-rose-600 font-medium bg-rose-50 p-2 rounded-lg text-center">
-                    Incorrect password. Authorization denied.
-                </div>
-                <div class="flex justify-end space-x-2 pt-2">
-                    <button type="button" onclick="closeDeleteAllModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-xl transition">
-                        Cancel
-                    </button>
-                    <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded-xl transition shadow-md shadow-rose-600/20">
-                        Confirm Delete All
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- Toast Banner -->
     <div id="toast" class="fixed top-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 max-w-sm w-full bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center space-x-3">
         <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-xl"></i>
@@ -760,40 +722,6 @@
             }
         }
 
-        function clearAllRecords() {
-            if (records.length === 0) {
-                showToast("No records available to clear.", "error");
-                return;
-            }
-            
-            // Open Delete All Confirmation & Password Modal
-            document.getElementById('deleteAllInputPassword').value = "";
-            document.getElementById('deleteAllAuthError').classList.add('hidden');
-            const modal = document.getElementById('deleteAllModal');
-            modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.remove('opacity-0'), 10);
-        }
-
-        function closeDeleteAllModal() {
-            const modal = document.getElementById('deleteAllModal');
-            modal.classList.add('opacity-0');
-            setTimeout(() => modal.classList.add('hidden'), 200);
-        }
-
-        function verifyDeleteAllAction(e) {
-            e.preventDefault();
-            const enteredPass = document.getElementById('deleteAllInputPassword').value.trim();
-            const aonShahPass = rfiPasswords["Aon Shah"]; // "pakistan"
-
-            if (enteredPass === aonShahPass) {
-                closeDeleteAllModal();
-                window.clearCloudRecords();
-            } else {
-                document.getElementById('deleteAllAuthError').classList.remove('hidden');
-                document.getElementById('deleteAllInputPassword').value = '';
-            }
-        }
-
         function updateStats() {
             const totalCount = records.length;
             const totalAmount = records.reduce((sum, r) => sum + (Number(r.recoveryAmount) || 0), 0);
@@ -866,6 +794,13 @@
             handleWardChange("");
         }
 
+        function clearAllRecords() {
+            if (records.length === 0) return;
+            if (confirm("Are you sure you want to clear all logged records from the cloud?")) {
+                window.clearCloudRecords();
+            }
+        }
+
         function getCleanExportData() {
             return records.map(({ _key, timestamp, ...rest }) => rest);
         }
@@ -911,9 +846,9 @@
 
     <!-- FIREBASE REAL-TIME CLOUD SYNC MODULE -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
-        import { getDatabase, ref, onValue, push, set, update, remove } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-analytics.js";
+        import { getDatabase, ref, onValue, push, set, update, remove } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAOlSvYOPtClCVFieZF31xhKBuq-vvtTcs",
