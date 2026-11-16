@@ -315,19 +315,26 @@
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <!-- Collection Date -->
+                        <!-- System Entry Date (Auto Today) -->
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Collection Date *</label>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Entry Date (Auto)</label>
+                            <input type="date" id="entryDate" readonly 
+                                class="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-600 cursor-not-allowed">
+                        </div>
+
+                        <!-- Date of Recovery -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Date of Recovery *</label>
                             <input type="date" id="collectionDate" required 
                                 class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
                         </div>
+                    </div>
 
-                        <!-- Recovery Amount -->
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Recovery Amount (Rs.) *</label>
-                            <input type="number" id="recoveryAmount" step="0.01" min="0" required placeholder="0.00" 
-                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
-                        </div>
+                    <!-- Recovery Amount -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Recovery Amount (Rs.) *</label>
+                        <input type="number" id="recoveryAmount" step="0.01" min="0" required placeholder="0.00" 
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
                     </div>
 
                     <!-- Status Dropdown -->
@@ -420,7 +427,7 @@
                         </select>
                     </div>
                     <div class="sm:col-span-5">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Filter by Collection Date</label>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Filter by Entry Date</label>
                         <input type="date" id="filterDate" onchange="applyFilters()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
                     </div>
                     <div class="sm:col-span-2">
@@ -433,7 +440,7 @@
 
                 <!-- Table -->
                 <div class="overflow-x-auto custom-scrollbar flex-1 -mx-5 sm:mx-0">
-                    <table class="w-full text-left text-sm border-collapse min-w-[700px]">
+                    <table class="w-full text-left text-sm border-collapse min-w-[780px]">
                         <thead>
                             <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                                 <th class="py-3 px-3 w-10 text-center">
@@ -443,7 +450,8 @@
                                 <th class="py-3 px-3">RFI</th>
                                 <th class="py-3 px-3">AFI</th>
                                 <th class="py-3 px-3">Account ID</th>
-                                <th class="py-3 px-3">Date</th>
+                                <th class="py-3 px-3">Entry Date</th>
+                                <th class="py-3 px-3">Recovery Date</th>
                                 <th class="py-3 px-3">Amount</th>
                                 <th class="py-3 px-3">Status</th>
                                 <th class="py-3 px-3 text-right">Actions</th>
@@ -541,7 +549,7 @@
                         <table class="w-full text-left text-xs">
                             <thead>
                                 <tr class="bg-slate-50 text-slate-400 uppercase font-semibold border-b border-slate-100">
-                                    <th class="py-2 px-2.5">Date</th>
+                                    <th class="py-2 px-2.5">Entry Date</th>
                                     <th class="py-2 px-2.5 text-center">Entries</th>
                                     <th class="py-2 px-2.5 text-right">Total Recovered</th>
                                 </tr>
@@ -611,6 +619,7 @@
 
         window.onload = function() {
             populateWardDropdowns();
+            document.getElementById('entryDate').value = getTodayString();
             document.getElementById('collectionDate').value = getTodayString();
         };
 
@@ -691,9 +700,23 @@
             return str;
         }
 
+        // Resolves the systematic Entry Date (with fallback for older records)
+        function getRecordEntryDate(r) {
+            if (r.entryDate) return normalizeDateStr(r.entryDate);
+            if (r.collectionDate) return normalizeDateStr(r.collectionDate);
+            if (r.timestamp) {
+                const dt = new Date(r.timestamp);
+                if (!isNaN(dt.getTime())) {
+                    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+                }
+            }
+            return '';
+        }
+
         function handleFormSubmit(e) {
             e.preventDefault();
             const editKey = document.getElementById('editKey').value;
+            const autoEntryDate = normalizeDateStr(document.getElementById('entryDate').value) || getTodayString();
             
             const record = {
                 wardNo: String(document.getElementById('wardNo').value).trim(),
@@ -701,6 +724,7 @@
                 nameRfi: document.getElementById('nameRfi').value,
                 nameAfi: document.getElementById('nameAfi').value,
                 accountNumber: document.getElementById('accountNumber').value.trim(),
+                entryDate: autoEntryDate,
                 collectionDate: normalizeDateStr(document.getElementById('collectionDate').value),
                 recoveryAmount: parseFloat(document.getElementById('recoveryAmount').value) || 0,
                 status: document.getElementById('statusSelect').value,
@@ -722,9 +746,9 @@
 
             return records.filter(r => {
                 const recordWard = String(r.wardNo || '').replace(/^Ward\s*(No\.?)?\s*/i, '').trim();
-                const recordDate = normalizeDateStr(r.collectionDate);
+                const recordEntryDate = getRecordEntryDate(r);
                 const matchWard = !wardFilter || recordWard === wardFilter;
-                const matchDate = !dateFilter || recordDate === dateFilter;
+                const matchDate = !dateFilter || recordEntryDate === dateFilter;
                 return matchWard && matchDate;
             });
         }
@@ -772,7 +796,8 @@
                     <td class="py-3 px-3 text-slate-600">${r.nameRfi}</td>
                     <td class="py-3 px-3 text-slate-600">${r.nameAfi}</td>
                     <td class="py-3 px-3 font-mono text-xs text-sky-700 bg-sky-50/50 rounded-lg px-2 py-1 inline-block mt-1">${r.accountNumber}</td>
-                    <td class="py-3 px-3 text-slate-500 text-xs">${normalizeDateStr(r.collectionDate)}</td>
+                    <td class="py-3 px-3 text-slate-500 text-xs">${getRecordEntryDate(r)}</td>
+                    <td class="py-3 px-3 text-slate-700 font-medium text-xs">${normalizeDateStr(r.collectionDate)}</td>
                     <td class="py-3 px-3 font-semibold text-emerald-600">Rs. ${(Number(r.recoveryAmount) || 0).toLocaleString()}</td>
                     <td class="py-3 px-3">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 border border-slate-200">
@@ -844,6 +869,7 @@
                     handleWardChange(target.wardNo);
                     document.getElementById('nameAfi').value = target.nameAfi;
                     document.getElementById('accountNumber').value = target.accountNumber;
+                    document.getElementById('entryDate').value = getRecordEntryDate(target) || getTodayString();
                     document.getElementById('collectionDate').value = normalizeDateStr(target.collectionDate);
                     document.getElementById('recoveryAmount').value = target.recoveryAmount;
                     document.getElementById('statusSelect').value = target.status;
@@ -929,7 +955,7 @@
                 afiMap[afiName].count += 1;
                 afiMap[afiName].amount += amt;
 
-                const dKey = normalizeDateStr(r.collectionDate) || 'No Date';
+                const dKey = getRecordEntryDate(r) || 'No Date';
                 if (!dateMap[dKey]) dateMap[dKey] = { count: 0, amount: 0 };
                 dateMap[dKey].count += 1;
                 dateMap[dKey].amount += amt;
@@ -967,6 +993,7 @@
             document.getElementById('edit-badge').classList.add('hidden');
             document.getElementById('btnSubmitText').innerText = "Add Record";
             document.getElementById('btnSubmitIcon').className = "fa-solid fa-plus text-sm";
+            document.getElementById('entryDate').value = getTodayString();
             document.getElementById('collectionDate').value = getTodayString();
             handleWardChange("");
         }
@@ -999,6 +1026,8 @@
                     parsedImportRecords = rawRows.map((row, idx) => {
                         const rawWard = String(row.wardNo ?? row['Ward No'] ?? row['Ward'] ?? '').replace(/^Ward\s*(No\.?)?\s*/i, '').trim();
                         const mapped = wardMappingData.find(item => item.ward === rawWard);
+                        const recDate = normalizeDateStr(row.collectionDate ?? row['Date of Recovery'] ?? row['Recovery Date'] ?? row['Collection Date'] ?? row['Date'] ?? getTodayString());
+                        const entDate = normalizeDateStr(row.entryDate ?? row['Entry Date'] ?? recDate);
 
                         return {
                             wardNo: rawWard,
@@ -1006,7 +1035,8 @@
                             nameRfi: String(row.nameRfi ?? row["Name of RFI's"] ?? row['RFI'] ?? (mapped ? mapped.rfi : '')).trim(),
                             nameAfi: String(row.nameAfi ?? row["Name of AFI's"] ?? row['AFI'] ?? (mapped ? mapped.afi : '')).trim(),
                             accountNumber: String(row.accountNumber ?? row['Account ID'] ?? row['Account Number'] ?? '').trim(),
-                            collectionDate: normalizeDateStr(row.collectionDate ?? row['Collection Date'] ?? row['Date'] ?? getTodayString()),
+                            entryDate: entDate,
+                            collectionDate: recDate,
                             recoveryAmount: parseFloat(String(row.recoveryAmount ?? row['Recovery Amount'] ?? row['Amount'] ?? 0).replace(/,/g, '')) || 0,
                             status: String(row.status ?? row['Status'] ?? 'Full Recovered').trim(),
                             remarks: String(row.remarks ?? row['Remarks'] ?? '').trim(),
@@ -1049,7 +1079,10 @@
         }
 
         function getCleanExportData() {
-            return records.map(({ _key, timestamp, ...rest }) => rest);
+            return records.map(({ _key, timestamp, ...rest }) => ({
+                ...rest,
+                entryDate: getRecordEntryDate(rest)
+            }));
         }
 
         function exportExcel() {
