@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- SheetJS (xlsx) for native Excel file generation -->
+    <!-- SheetJS (xlsx) for native Excel file generation & import -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <script>
@@ -170,6 +170,42 @@
         </div>
     </div>
 
+    <!-- Import Excel Confirmation Modal -->
+    <div id="importExcelModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex items-center space-x-3 text-indigo-600">
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-file-import"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Import Excel Backup</h3>
+                    <p id="importSummarySub" class="text-xs text-slate-500">0 valid records found in file</p>
+                </div>
+            </div>
+            
+            <p class="text-xs text-slate-600 leading-relaxed">
+                Choose how you want to restore the records from your Excel file into the live cloud system:
+            </p>
+
+            <div class="space-y-2 pt-1">
+                <button type="button" onclick="confirmExcelImport('replace')" class="w-full px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate"></i>
+                    <span>Replace All Live Records (Exact Restore)</span>
+                </button>
+                <button type="button" onclick="confirmExcelImport('append')" class="w-full px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Add / Append to Existing Live Records</span>
+                </button>
+                <button type="button" onclick="closeImportModal()" class="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-xl transition">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden File Input for Excel Import -->
+    <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelFileSelect(event)">
+
     <!-- Toast Banner -->
     <div id="toast" class="fixed top-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 max-w-sm w-full bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center space-x-3">
         <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-xl"></i>
@@ -196,7 +232,12 @@
                     <span id="syncStatusText">Connecting...</span>
                 </span>
 
-                <button onclick="exportExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                <button onclick="triggerExcelImport()" title="Import Excel Backup" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-file-import"></i>
+                    <span class="hidden sm:inline">Import</span>
+                </button>
+
+                <button onclick="exportExcel()" title="Download Excel" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm">
                     <i class="fa-solid fa-file-excel"></i>
                     <span class="hidden sm:inline">Excel</span>
                 </button>
@@ -285,7 +326,7 @@
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Recovery Amount (Rs.) *</label>
                             <input type="number" id="recoveryAmount" step="0.01" min="0" required placeholder="0.00" 
-                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
                         </div>
                     </div>
 
@@ -345,6 +386,12 @@
                             <span>Download Excel</span>
                         </button>
 
+                        <button onclick="triggerExcelImport()" 
+                            class="flex-1 sm:flex-none px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 active:scale-95">
+                            <i class="fa-solid fa-file-import"></i>
+                            <span>Import Excel</span>
+                        </button>
+
                         <button onclick="copyToClipboard()" 
                             class="flex-1 sm:flex-none px-3.5 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 font-medium text-xs rounded-xl border border-sky-200 transition flex items-center justify-center gap-1.5 active:scale-95">
                             <i class="fa-regular fa-copy"></i>
@@ -365,16 +412,22 @@
                 </div>
 
                 <!-- Filters -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 bg-slate-50 p-3 rounded-2xl border border-slate-200">
-                    <div>
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-4 bg-slate-50 p-3 rounded-2xl border border-slate-200 items-end">
+                    <div class="sm:col-span-5">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Filter by Ward</label>
                         <select id="filterWard" onchange="applyFilters()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
                             <option value="">All Wards</option>
                         </select>
                     </div>
-                    <div>
+                    <div class="sm:col-span-5">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Filter by Collection Date</label>
                         <input type="date" id="filterDate" onchange="applyFilters()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <button type="button" onclick="resetFilters()" title="Clear Filters" class="w-full bg-white hover:bg-slate-100 text-slate-600 font-semibold text-xs py-1.5 px-2.5 rounded-xl border border-slate-200 transition flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                            <span>Clear</span>
+                        </button>
                     </div>
                 </div>
 
@@ -554,6 +607,7 @@
         let records = [];
         let pendingRecordKey = "";
         let pendingActionType = "";
+        let parsedImportRecords = [];
 
         window.onload = function() {
             populateWardDropdowns();
@@ -590,7 +644,7 @@
         }
 
         function handleWardChange(selectedWard) {
-            const row = wardMappingData.find(item => item.ward === selectedWard);
+            const row = wardMappingData.find(item => item.ward === String(selectedWard).trim());
             document.getElementById('subDivision').value = row ? row.subDiv : "";
             document.getElementById('nameRfi').value = row ? row.rfi : "";
             document.getElementById('nameAfi').value = row ? row.afi : "";
@@ -602,8 +656,39 @@
             }
         }
 
+        // Local-timezone-safe YYYY-MM-DD generator (prevents UTC midnight shift bugs)
         function getTodayString() {
-            return new Date().toISOString().split('T')[0];
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        // Normalizes any date input/Excel date into strict YYYY-MM-DD for accurate filtering
+        function normalizeDateStr(val) {
+            if (val === null || val === undefined || val === '') return '';
+            // Handle Excel numeric serial dates
+            if (typeof val === 'number') {
+                const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+                const dt = new Date(excelEpoch.getTime() + val * 86400000);
+                return dt.toISOString().split('T')[0];
+            }
+            const str = String(val).trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+            // Handle DD/MM/YYYY or DD-MM-YYYY
+            const dmyMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+            if (dmyMatch) {
+                return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`;
+            }
+            const parsed = new Date(str);
+            if (!isNaN(parsed.getTime())) {
+                const y = parsed.getFullYear();
+                const m = String(parsed.getMonth() + 1).padStart(2, '0');
+                const d = String(parsed.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+            return str;
         }
 
         function handleFormSubmit(e) {
@@ -611,12 +696,12 @@
             const editKey = document.getElementById('editKey').value;
             
             const record = {
-                wardNo: document.getElementById('wardNo').value,
+                wardNo: String(document.getElementById('wardNo').value).trim(),
                 subDivision: document.getElementById('subDivision').value,
                 nameRfi: document.getElementById('nameRfi').value,
                 nameAfi: document.getElementById('nameAfi').value,
                 accountNumber: document.getElementById('accountNumber').value.trim(),
-                collectionDate: document.getElementById('collectionDate').value,
+                collectionDate: normalizeDateStr(document.getElementById('collectionDate').value),
                 recoveryAmount: parseFloat(document.getElementById('recoveryAmount').value) || 0,
                 status: document.getElementById('statusSelect').value,
                 remarks: document.getElementById('remarks').value.trim(),
@@ -632,17 +717,29 @@
         }
 
         function getFilteredRecords() {
-            const wardFilter = document.getElementById('filterWard').value;
-            const dateFilter = document.getElementById('filterDate').value;
+            const wardFilter = String(document.getElementById('filterWard').value || '').trim();
+            const dateFilter = normalizeDateStr(document.getElementById('filterDate').value || '');
 
             return records.filter(r => {
-                let matchWard = !wardFilter || r.wardNo === wardFilter;
-                let matchDate = !dateFilter || r.collectionDate === dateFilter;
+                const recordWard = String(r.wardNo || '').replace(/^Ward\s*(No\.?)?\s*/i, '').trim();
+                const recordDate = normalizeDateStr(r.collectionDate);
+                const matchWard = !wardFilter || recordWard === wardFilter;
+                const matchDate = !dateFilter || recordDate === dateFilter;
                 return matchWard && matchDate;
             });
         }
 
-        function applyFilters() { renderTable(); }
+        function applyFilters() {
+            renderTable();
+            updateStats();
+            updateRealTimeSummaries();
+        }
+
+        function resetFilters() {
+            document.getElementById('filterWard').value = "";
+            document.getElementById('filterDate').value = "";
+            applyFilters();
+        }
 
         function toggleSelectAll(masterCheckbox) {
             document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = masterCheckbox.checked);
@@ -652,8 +749,11 @@
             const tbody = document.getElementById('logTableBody');
             const emptyState = document.getElementById('emptyState');
             const filtered = getFilteredRecords();
+            const isFiltered = Boolean(document.getElementById('filterWard').value || document.getElementById('filterDate').value);
 
-            document.getElementById('badge-count').innerText = records.length;
+            document.getElementById('badge-count').innerText = isFiltered
+                ? `${filtered.length} of ${records.length}`
+                : `${records.length}`;
             document.getElementById('selectAllCheckbox').checked = false;
 
             if (filtered.length === 0) {
@@ -672,7 +772,7 @@
                     <td class="py-3 px-3 text-slate-600">${r.nameRfi}</td>
                     <td class="py-3 px-3 text-slate-600">${r.nameAfi}</td>
                     <td class="py-3 px-3 font-mono text-xs text-sky-700 bg-sky-50/50 rounded-lg px-2 py-1 inline-block mt-1">${r.accountNumber}</td>
-                    <td class="py-3 px-3 text-slate-500 text-xs">${r.collectionDate}</td>
+                    <td class="py-3 px-3 text-slate-500 text-xs">${normalizeDateStr(r.collectionDate)}</td>
                     <td class="py-3 px-3 font-semibold text-emerald-600">Rs. ${(Number(r.recoveryAmount) || 0).toLocaleString()}</td>
                     <td class="py-3 px-3">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 border border-slate-200">
@@ -740,11 +840,11 @@
                     window.deleteRecordFromCloud(targetKey);
                 } else if (targetAction === 'edit') {
                     document.getElementById('editKey').value = targetKey;
-                    document.getElementById('wardNo').value = target.wardNo;
+                    document.getElementById('wardNo').value = String(target.wardNo).trim();
                     handleWardChange(target.wardNo);
                     document.getElementById('nameAfi').value = target.nameAfi;
                     document.getElementById('accountNumber').value = target.accountNumber;
-                    document.getElementById('collectionDate').value = target.collectionDate;
+                    document.getElementById('collectionDate').value = normalizeDateStr(target.collectionDate);
                     document.getElementById('recoveryAmount').value = target.recoveryAmount;
                     document.getElementById('statusSelect').value = target.status;
                     document.getElementById('remarks').value = target.remarks || "";
@@ -768,7 +868,6 @@
                 return;
             }
             
-            // Open Delete All Confirmation & Password Modal
             document.getElementById('deleteAllInputPassword').value = "";
             document.getElementById('deleteAllAuthError').classList.add('hidden');
             const modal = document.getElementById('deleteAllModal');
@@ -796,10 +895,12 @@
             }
         }
 
+        // Uses active filtered dataset so MD-level views always stay up to date & accurate
         function updateStats() {
-            const totalCount = records.length;
-            const totalAmount = records.reduce((sum, r) => sum + (Number(r.recoveryAmount) || 0), 0);
-            const pendingCount = records.filter(r => r.status !== 'Full Recovered').length;
+            const activeRecords = getFilteredRecords();
+            const totalCount = activeRecords.length;
+            const totalAmount = activeRecords.reduce((sum, r) => sum + (Number(r.recoveryAmount) || 0), 0);
+            const pendingCount = activeRecords.filter(r => r.status !== 'Full Recovered').length;
 
             document.getElementById('stat-total-count').innerText = totalCount;
             document.getElementById('stat-total-amount').innerText = `Rs. ${totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
@@ -807,14 +908,16 @@
         }
 
         function updateRealTimeSummaries() {
+            const activeRecords = getFilteredRecords();
             const wardMap = {}, rfiMap = {}, afiMap = {}, dateMap = {};
 
-            records.forEach(r => {
+            activeRecords.forEach(r => {
                 const amt = Number(r.recoveryAmount) || 0;
+                const wKey = String(r.wardNo || 'Unassigned').trim();
 
-                if (!wardMap[r.wardNo]) wardMap[r.wardNo] = { count: 0, amount: 0 };
-                wardMap[r.wardNo].count += 1;
-                wardMap[r.wardNo].amount += amt;
+                if (!wardMap[wKey]) wardMap[wKey] = { count: 0, amount: 0 };
+                wardMap[wKey].count += 1;
+                wardMap[wKey].amount += amt;
 
                 const rfiName = r.nameRfi || 'Unassigned';
                 if (!rfiMap[rfiName]) rfiMap[rfiName] = { count: 0, amount: 0 };
@@ -826,7 +929,7 @@
                 afiMap[afiName].count += 1;
                 afiMap[afiName].amount += amt;
 
-                const dKey = r.collectionDate || 'No Date';
+                const dKey = normalizeDateStr(r.collectionDate) || 'No Date';
                 if (!dateMap[dKey]) dateMap[dKey] = { count: 0, amount: 0 };
                 dateMap[dKey].count += 1;
                 dateMap[dKey].amount += amt;
@@ -851,7 +954,7 @@
                 <tr class="hover:bg-slate-50 transition"><td class="py-2 px-2.5 font-semibold text-slate-800 truncate max-w-[140px]" title="${afi}">${afi}</td><td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td><td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td></tr>`).join('');
 
             const dateBody = document.getElementById('dateSummaryBody');
-            const dateEntries = Object.entries(dateMap).sort((a,b) => new Date(b[0]) - new Date(a[0]));
+            const dateEntries = Object.entries(dateMap).sort((a,b) => b[0].localeCompare(a[0]));
             document.getElementById('date-summary-count').innerText = `${dateEntries.length} Days`;
             dateBody.innerHTML = dateEntries.length === 0 ? `<tr><td colspan="3" class="py-4 text-center text-slate-400 italic">No summary data available</td></tr>` : dateEntries.map(([date, data]) => `
                 <tr class="hover:bg-slate-50 transition"><td class="py-2 px-2.5 font-semibold text-slate-800">${date}</td><td class="py-2 px-2.5 text-center text-slate-600">${data.count}</td><td class="py-2 px-2.5 text-right font-semibold text-emerald-600">Rs. ${data.amount.toLocaleString()}</td></tr>`).join('');
@@ -866,6 +969,83 @@
             document.getElementById('btnSubmitIcon').className = "fa-solid fa-plus text-sm";
             document.getElementById('collectionDate').value = getTodayString();
             handleWardChange("");
+        }
+
+        // --- EXCEL BACKUP IMPORT LOGIC ---
+        function triggerExcelImport() {
+            const input = document.getElementById('excelFileInput');
+            input.value = "";
+            input.click();
+        }
+
+        function handleExcelFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rawRows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+
+                    if (!rawRows || rawRows.length === 0) {
+                        showToast("The selected Excel file is empty.", "error");
+                        return;
+                    }
+
+                    const baseTs = Date.now();
+                    parsedImportRecords = rawRows.map((row, idx) => {
+                        const rawWard = String(row.wardNo ?? row['Ward No'] ?? row['Ward'] ?? '').replace(/^Ward\s*(No\.?)?\s*/i, '').trim();
+                        const mapped = wardMappingData.find(item => item.ward === rawWard);
+
+                        return {
+                            wardNo: rawWard,
+                            subDivision: String(row.subDivision ?? row['Sub Division'] ?? (mapped ? mapped.subDiv : '')).trim(),
+                            nameRfi: String(row.nameRfi ?? row["Name of RFI's"] ?? row['RFI'] ?? (mapped ? mapped.rfi : '')).trim(),
+                            nameAfi: String(row.nameAfi ?? row["Name of AFI's"] ?? row['AFI'] ?? (mapped ? mapped.afi : '')).trim(),
+                            accountNumber: String(row.accountNumber ?? row['Account ID'] ?? row['Account Number'] ?? '').trim(),
+                            collectionDate: normalizeDateStr(row.collectionDate ?? row['Collection Date'] ?? row['Date'] ?? getTodayString()),
+                            recoveryAmount: parseFloat(String(row.recoveryAmount ?? row['Recovery Amount'] ?? row['Amount'] ?? 0).replace(/,/g, '')) || 0,
+                            status: String(row.status ?? row['Status'] ?? 'Full Recovered').trim(),
+                            remarks: String(row.remarks ?? row['Remarks'] ?? '').trim(),
+                            timestamp: baseTs - idx
+                        };
+                    }).filter(r => r.wardNo !== '' || r.accountNumber !== '');
+
+                    if (parsedImportRecords.length === 0) {
+                        showToast("No valid field records found in file.", "error");
+                        return;
+                    }
+
+                    document.getElementById('importSummarySub').innerText = `${parsedImportRecords.length} valid records ready from "${file.name}"`;
+                    const modal = document.getElementById('importExcelModal');
+                    modal.classList.remove('hidden');
+                    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+                } catch (err) {
+                    console.error("Excel parse error:", err);
+                    showToast("Failed to read Excel file: " + err.message, "error");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function closeImportModal() {
+            const modal = document.getElementById('importExcelModal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+            parsedImportRecords = [];
+        }
+
+        function confirmExcelImport(mode) {
+            if (!parsedImportRecords || parsedImportRecords.length === 0) {
+                closeImportModal();
+                return;
+            }
+            const recordsToUpload = [...parsedImportRecords];
+            closeImportModal();
+            window.importRecordsToCloud(recordsToUpload, mode);
         }
 
         function getCleanExportData() {
@@ -1007,6 +1187,34 @@
                     console.error("Clear error:", err);
                     showToast("Clear failed: " + err.message, "error");
                 });
+        };
+
+        window.importRecordsToCloud = function(importedList, mode = 'replace') {
+            if (mode === 'replace') {
+                const bulkObj = {};
+                importedList.forEach(item => {
+                    const newKey = push(recordsRef).key;
+                    bulkObj[newKey] = item;
+                });
+                set(recordsRef, bulkObj)
+                    .then(() => showToast(`Restored ${importedList.length} records from Excel!`, "success"))
+                    .catch((err) => {
+                        console.error("Import replace error:", err);
+                        showToast("Import failed: " + err.message, "error");
+                    });
+            } else {
+                const updates = {};
+                importedList.forEach(item => {
+                    const newKey = push(recordsRef).key;
+                    updates[newKey] = item;
+                });
+                update(recordsRef, updates)
+                    .then(() => showToast(`Imported & added ${importedList.length} records!`, "success"))
+                    .catch((err) => {
+                        console.error("Import append error:", err);
+                        showToast("Import failed: " + err.message, "error");
+                    });
+            }
         };
     </script>
 </body>
