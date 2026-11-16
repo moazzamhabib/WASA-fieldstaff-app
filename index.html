@@ -334,7 +334,7 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Recovery Amount (Rs.) *</label>
                         <input type="number" id="recoveryAmount" step="0.01" min="0" required placeholder="0.00" 
-                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition">
                     </div>
 
                     <!-- Status Dropdown -->
@@ -427,7 +427,7 @@
                         </select>
                     </div>
                     <div class="sm:col-span-5">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Filter by Recovery Date</label>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Filter by Date of Entry</label>
                         <input type="date" id="filterDate" onchange="applyFilters()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
                     </div>
                     <div class="sm:col-span-2">
@@ -744,9 +744,9 @@
 
             return records.filter(r => {
                 const recordWard = String(r.wardNo || '').replace(/^Ward\s*(No\.?)?\s*/i, '').trim();
-                const recordRecoveryDate = normalizeDateStr(r.collectionDate);
+                const recordEntryDate = getRecordEntryDate(r);
                 const matchWard = !wardFilter || recordWard === wardFilter;
-                const matchDate = !dateFilter || recordRecoveryDate === dateFilter;
+                const matchDate = !dateFilter || recordEntryDate === dateFilter;
                 return matchWard && matchDate;
             });
         }
@@ -914,7 +914,7 @@
                 closeDeleteAllModal();
                 window.clearCloudRecords();
             } else {
-                document.getElementById('deleteAllAuthError').classList.remove('hidden');
+                document.getElementById('deleteAllAuthError').classList.add('hidden');
                 document.getElementById('deleteAllInputPassword').value = '';
             }
         }
