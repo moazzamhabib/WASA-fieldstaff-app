@@ -1076,34 +1076,58 @@
             window.importRecordsToCloud(recordsToUpload, mode);
         }
 
-        function getCleanExportData() {
-            return records.map(({ _key, timestamp, ...rest }) => ({
+function getFilteredExportData() {
+            const filtered = getFilteredRecords();
+            return filtered.map(({ _key, timestamp, ...rest }) => ({
                 ...rest,
                 entryDate: getRecordEntryDate(rest)
             }));
         }
 
         function exportExcel() {
-            if (records.length === 0) return;
-            const worksheet = XLSX.utils.json_to_sheet(getCleanExportData());
+            const activeData = getFilteredExportData();
+            if (activeData.length === 0) {
+                showToast("No records available for the selected filter.", "error");
+                return;
+            }
+            
+            const wardFilter = document.getElementById('filterWard').value;
+            const dateFilter = document.getElementById('filterDate').value;
+            let fileSuffix = getTodayString();
+            if (wardFilter) fileSuffix = `Ward_${wardFilter}_${fileSuffix}`;
+            else if (dateFilter) fileSuffix = `Date_${dateFilter}_${fileSuffix}`;
+
+            const worksheet = XLSX.utils.json_to_sheet(activeData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Field Log");
-            XLSX.writeFile(workbook, `Field_Log_${getTodayString()}.xlsx`);
+            XLSX.writeFile(workbook, `Field_Log_${fileSuffix}.xlsx`);
+            showToast("Filtered Excel downloaded successfully!", "success");
         }
 
         function exportCSV() {
-            if (records.length === 0) return;
-            const worksheet = XLSX.utils.json_to_sheet(getCleanExportData());
+            const activeData = getFilteredExportData();
+            if (activeData.length === 0) {
+                showToast("No records available for the selected filter.", "error");
+                return;
+            }
+
+            const wardFilter = document.getElementById('filterWard').value;
+            const dateFilter = document.getElementById('filterDate').value;
+            let fileSuffix = getTodayString();
+            if (wardFilter) fileSuffix = `Ward_${wardFilter}_${fileSuffix}`;
+            else if (dateFilter) fileSuffix = `Date_${dateFilter}_${fileSuffix}`;
+
+            const worksheet = XLSX.utils.json_to_sheet(activeData);
             const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
             const blob = new Blob([csvOutput], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.setAttribute("download", `Field_Log_${getTodayString()}.csv`);
+            link.setAttribute("download", `Field_Log_${fileSuffix}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            showToast("Filtered CSV downloaded successfully!", "success");
         }
-
         function copyToClipboard() {
             if (records.length === 0) return;
             const tsvContent = getCleanExportData().map(r => Object.values(r).join("\t")).join("\n");
